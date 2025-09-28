@@ -1,0 +1,562 @@
+{
+  "rol": [
+    {
+      "id_rol": 1,
+      "descripcion": "admin"
+    },
+    {
+      "id_rol": 2,
+      "descripcion": "cajero"
+    },
+    {
+      "id_rol": 3,
+      "descripcion": "inventario"
+    }
+  ],
+  "usuario": [
+    {
+      "id_usuario": 1,
+      "usuario": "admin",
+      "contrasenia": "admin123",
+      "nombre": "Administrador Principal",
+      "habilitado": true,
+      "reset": true,
+      "id_rol": 1
+    },
+    {
+      "id_usuario": 2,
+      "usuario": "cajero",
+      "contrasenia": "cajero123",
+      "nombre": "Juan Pérez",
+      "habilitado": true,
+      "reset": true,
+      "id_rol": 2
+    },
+    {
+      "id_usuario": 3,
+      "usuario": "inventario",
+      "contrasenia": "inventario123",
+      "nombre": "María García",
+      "habilitado": true,
+      "reset": true,
+      "id_rol": 3
+    }
+  ],
+  "producto_cat": [
+    {
+      "id_cat": 1,
+      "descripcion": "Frutas"
+    },
+    {
+      "id_cat": 2,
+      "descripcion": "Verduras"
+    },
+    {
+      "id_cat": 3,
+      "descripcion": "Carnes"
+    },
+    {
+      "id_cat": 4,
+      "descripcion": "Aseo"
+    },
+    {
+      "id_cat": 5,
+      "descripcion": "Embutidos"
+    },
+    {
+      "id_cat": 6,
+      "descripcion": "Panadería"
+    },
+    {
+      "id_cat": 7,
+      "descripcion": "Bebidas"
+    },
+    {
+      "id_cat": 8,
+      "descripcion": "Abarrotes"
+    },
+    {
+      "id_cat": 9,
+      "descripcion": "Lácteos"
+    }
+  ],
+  "producto": [
+    {
+      "id_producto": 1,
+      "descripcion": "Aceite Primor",
+      "id_cat": 8,
+      "habilitado": true
+    },
+    {
+      "id_producto": 2,
+      "descripcion": "Huevos LA CALERA",
+      "id_cat": 3,
+      "habilitado": true
+    },
+    {
+      "id_producto": 3,
+      "descripcion": "Pan Bimbo",
+      "id_cat": 6,
+      "habilitado": true
+    },
+    {
+      "id_producto": 4,
+      "descripcion": "Laive Sin Lactosa",
+      "id_cat": 9,
+      "habilitado": true
+    },
+    {
+      "id_producto": 5,
+      "descripcion": "Papas INKA CHIPS",
+      "id_cat": 8,
+      "habilitado": true
+    },
+    {
+      "id_producto": 6,
+      "descripcion": "Tomate Italiano",
+      "id_cat": 2,
+      "habilitado": true
+    },
+    {
+      "id_producto": 7,
+      "descripcion": "Atún Florida",
+      "id_cat": 8,
+      "habilitado": true
+    },
+    {
+      "id_producto": 8,
+      "descripcion": "Cerveza PILSEN",
+      "id_cat": 7,
+      "habilitado": true
+    },
+    {
+      "id_producto": 9,
+      "descripcion": "Yogurt Gloria",
+      "id_cat": 9,
+      "habilitado": true
+    },
+    {
+      "id_producto": 10,
+      "descripcion": "Arroz Extra Faraón",
+      "id_cat": 8,
+      "habilitado": true
+    },
+    {
+      "id_producto": 11,
+      "descripcion": "Gaseosa Inca Kola",
+      "id_cat": 7,
+      "habilitado": true
+    },
+    {
+      "id_producto": 12,
+      "descripcion": "Detergente Patito",
+      "id_cat": 4,
+      "habilitado": true
+    }
+  ],
+  "proveedor": [
+    {
+      "id_proveedor": 1,
+      "descripcion": "Distribuidora Norte",
+      "telefono": "987654321",
+      "habilitado": true
+    },
+    {
+      "id_proveedor": 2,
+      "descripcion": "Coca Cola Company",
+      "telefono": "912345678",
+      "habilitado": true
+    },
+    {
+      "id_proveedor": 3,
+      "descripcion": "Panadería Central",
+      "telefono": "945678912",
+      "habilitado": true
+    },
+    {
+      "id_proveedor": 4,
+      "descripcion": "Gloria S.A.",
+      "telefono": "998877665",
+      "habilitado": true
+    },
+    {
+      "id_proveedor": 5,
+      "descripcion": "Alicorp S.A.A.",
+      "telefono": "966554433",
+      "habilitado": true
+    }
+  ],
+  "orden_compra_cab": [
+    {
+      "id_orden_compra": 1,
+      "id_proveedor": 1,
+      "id_usuario": 1,
+      "codigo": "OC001",
+      "fecha": "2024-01-15T08:30:00.000Z",
+      "total": 850.50,
+      "igv": 130.14,
+      "aprobado": true,
+      "habilitado": true
+    },
+    {
+      "id_orden_compra": 2,
+      "id_proveedor": 3,
+      "codigo": "OC002",
+      "id_usuario": 3,
+      "fecha": "2024-01-14T10:15:00.000Z",
+      "total": 420.80,
+      "igv": 64.42,
+      "aprobado": true,
+      "habilitado": true
+    }
+  ],
+  "orden_compra_det": [
+    {
+      "id_orden_compra_det": 1,
+      "id_orden_compra": 1,
+      "id_producto": 1,
+      "precio": 10.50,
+      "cantidad": 50
+    },
+    {
+      "id_orden_compra_det": 2,
+      "id_orden_compra": 1,
+      "id_producto": 7,
+      "precio": 5.80,
+      "cantidad": 30
+    },
+    {
+      "id_orden_compra_det": 3,
+      "id_orden_compra": 2,
+      "id_producto": 3,
+      "precio": 3.50,
+      "cantidad": 40
+    }
+  ],
+  "movimiento_cab": [
+    {
+      "id_movimiento_cab": 1,
+      "id_operacion": 1,
+      "id_usuario": 1,
+      "entrada_salida": 1,
+      "codigo": "MOV001",
+      "fecha": "2024-01-15T09:00:00.000Z",
+      "habilitado": true
+    },
+    {
+      "id_movimiento_cab": 2,
+      "id_operacion": null,
+      "id_usuario": 3,
+      "entrada_salida": 1,
+      "codigo": "MOV002",
+      "fecha": "2024-01-14T11:30:00.000Z",
+      "habilitado": true
+    },
+    {
+      "id_movimiento_cab": 3,
+      "id_operacion": null,
+      "id_usuario": 2,
+      "entrada_salida": 0,
+      "codigo": "MOV003",
+      "fecha": "2024-01-16T14:20:00.000Z",
+      "habilitado": true
+    }
+  ],
+  "movimiento_det": [
+    {
+      "id_det_movimiento": 1,
+      "id_cab_movimiento": 1,
+      "id_producto": 1,
+      "cantidad": 50,
+      "precio": 10.50,
+      "habilitado": true
+    },
+    {
+      "id_det_movimiento": 2,
+      "id_cab_movimiento": 1,
+      "id_producto": 7,
+      "cantidad": 30,
+      "precio": 5.80,
+      "habilitado": true
+    },
+    {
+      "id_det_movimiento": 3,
+      "id_cab_movimiento": 2,
+      "id_producto": 3,
+      "cantidad": 40,
+      "precio": 3.50,
+      "habilitado": true
+    },
+    {
+      "id_det_movimiento": 4,
+      "id_cab_movimiento": 2,
+      "id_producto": 2,
+      "cantidad": 29,
+      "precio": 7.20,
+      "habilitado": true
+    },
+    {
+      "id_det_movimiento": 5,
+      "id_cab_movimiento": 3,
+      "id_producto": 1,
+      "cantidad": -2,
+      "precio": 12.50,
+      "habilitado": true
+    }
+  ],
+  "inventario": [
+    {
+      "id_inventario": 1,
+      "id_movimiento_cab": 1,
+      "id_producto": 1,
+      "stock": 48,
+      "precio": 12.50,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 2,
+      "id_movimiento_cab": 1,
+      "id_producto": 7,
+      "stock": 30,
+      "precio": 6.80,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 3,
+      "id_movimiento_cab": 2,
+      "id_producto": 3,
+      "stock": 40,
+      "precio": 4.20,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 4,
+      "id_movimiento_cab": 2,
+      "id_producto": 2,
+      "stock": 29,
+      "precio": 8.50,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 5,
+      "id_movimiento_cab": 1,
+      "id_producto": 4,
+      "stock": 75,
+      "precio": 5.80,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 6,
+      "id_movimiento_cab": 1,
+      "id_producto": 5,
+      "stock": 30,
+      "precio": 3.50,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 7,
+      "id_movimiento_cab": 1,
+      "id_producto": 6,
+      "stock": 120,
+      "precio": 4.00,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 8,
+      "id_movimiento_cab": 1,
+      "id_producto": 8,
+      "stock": 31,
+      "precio": 4.50,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 9,
+      "id_movimiento_cab": 1,
+      "id_producto": 9,
+      "stock": 60,
+      "precio": 3.20,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 10,
+      "id_movimiento_cab": 1,
+      "id_producto": 10,
+      "stock": 52,
+      "precio": 5.80,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 11,
+      "id_movimiento_cab": 1,
+      "id_producto": 11,
+      "stock": 48,
+      "precio": 3.50,
+      "habilitado": true
+    },
+    {
+      "id_inventario": 12,
+      "id_movimiento_cab": 1,
+      "id_producto": 12,
+      "stock": 34,
+      "precio": 12.90,
+      "habilitado": true
+    }
+  ],
+  "tipo_oferta": [
+    {
+      "id_tipo_oferta": 1,
+      "descripcion": "Descuento Porcentual",
+      "habilitado": true
+    },
+    {
+      "id_tipo_oferta": 2,
+      "descripcion": "2x1",
+      "habilitado": true
+    },
+    {
+      "id_tipo_oferta": 3,
+      "descripcion": "3x2",
+      "habilitado": true
+    },
+    {
+      "id_tipo_oferta": 4,
+      "descripcion": "Precio Fijo",
+      "habilitado": true
+    }
+  ],
+  "oferta": [
+    {
+      "id_oferta": 1,
+      "id_tipo_oferta": 1,
+      "id": 1,
+      "descripcion": "Descuento 10% en Aceite Primor",
+      "descuento": 10.00
+    },
+    {
+      "id_oferta": 2,
+      "id_tipo_oferta": 2,
+      "id": 5,
+      "descripcion": "2x1 en Papas INKA CHIPS",
+      "descuento": 50.00
+    },
+    {
+      "id_oferta": 3,
+      "id_tipo_oferta": 1,
+      "id": 9,
+      "descripcion": "Descuento 15% en Yogurt Gloria",
+      "descuento": 15.00
+    },
+    {
+      "id_oferta": 4,
+      "id_tipo_oferta": 3,
+      "id": 8,
+      "descripcion": "3x2 en Cerveza PILSEN",
+      "descuento": 33.33
+    }
+  ],
+  "cliente": [
+    {
+      "id_cliente": 1,
+      "Nombres": "Cliente General",
+      "dni": "00000000",
+      "habilitado": true
+    },
+    {
+      "id_cliente": 2,
+      "Nombres": "Carlos Rodriguez",
+      "dni": "12345678",
+      "habilitado": true
+    },
+    {
+      "id_cliente": 3,
+      "Nombres": "Ana Martinez",
+      "dni": "87654321",
+      "habilitado": true
+    },
+    {
+      "id_cliente": 4,
+      "Nombres": "Luis Gonzalez",
+      "dni": "11223344",
+      "habilitado": true
+    },
+    {
+      "id_cliente": 5,
+      "Nombres": "Sofia Lopez",
+      "dni": "55667788",
+      "habilitado": true
+    }
+  ],
+  "comprobante_cab": [
+    {
+      "id_comprobante_cab": 1,
+      "id_usuario": 2,
+      "id_cliente": 2,
+      "codigo": "B001-00001",
+      "fecha": "2024-01-16T15:30:00.000Z",
+      "descuento_total": 5.25,
+      "subtotal": 47.25,
+      "igv": 8.51,
+      "total": 55.76,
+      "habilitado": true
+    },
+    {
+      "id_comprobante_cab": 2,
+      "id_usuario": 2,
+      "id_cliente": 1,
+      "codigo": "B001-00002",
+      "fecha": "2024-01-16T16:45:00.000Z",
+      "descuento_total": 0.00,
+      "subtotal": 28.50,
+      "igv": 5.13,
+      "total": 33.63,
+      "habilitado": true
+    }
+  ],
+  "comprobante_det": [
+    {
+      "id_comprobante_det": 1,
+      "id_cab_boleta": 1,
+      "id_producto": 1,
+      "id_oferta": 1,
+      "descuento_item": 1.25,
+      "precio": 12.50,
+      "cantidad": 1
+    },
+    {
+      "id_comprobante_det": 2,
+      "id_cab_boleta": 1,
+      "id_producto": 5,
+      "id_oferta": 2,
+      "descuento_item": 1.75,
+      "precio": 3.50,
+      "cantidad": 2
+    },
+    {
+      "id_comprobante_det": 3,
+      "id_cab_boleta": 1,
+      "id_producto": 9,
+      "id_oferta": 3,
+      "descuento_item": 2.25,
+      "precio": 3.20,
+      "cantidad": 3
+    },
+    {
+      "id_comprobante_det": 4,
+      "id_cab_boleta": 2,
+      "id_producto": 3,
+      "id_oferta": null,
+      "descuento_item": 0.00,
+      "precio": 4.20,
+      "cantidad": 2
+    },
+    {
+      "id_comprobante_det": 5,
+      "id_cab_boleta": 2,
+      "id_producto": 6,
+      "id_oferta": null,
+      "descuento_item": 0.00,
+      "precio": 4.00,
+      "cantidad": 5
+    }
+  ]
+}
