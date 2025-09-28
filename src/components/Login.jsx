@@ -149,11 +149,11 @@ const Login = () => {
             )}
 
             {/* Demo Users Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-600">
+            <div className="">
               <p className="font-semibold mb-1">Usuarios de prueba:</p>
-              <p>• Admin: USER001 / admin123</p>
-              <p>• Cajero: USER002 / cajero123</p>
-              <p>• Inventario: USER003 / inventario123</p>
+              <p>Admin: USER001 / admin123</p>
+              <p>Cajero: USER002 / cajero123</p>
+              <p>Inventario: USER003 / inventario123</p>
             </div>
 
             {/* Forgot Password Link */}
