@@ -165,7 +165,7 @@ const Descuentos = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -190,17 +190,7 @@ const Descuentos = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Ahorro Total</p>
-              <p className="text-2xl font-bold text-gray-900">S/ {estadisticas.ahorroTotal.toFixed(2)}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <TrendingDown className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
+
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">

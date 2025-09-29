@@ -140,10 +140,10 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
 
   return (
     <>
-      {/* Overlay para móviles */}
+      {/* Overlay para móviles - Solo mostrar en pantallas muy pequeñas donde la sidebar se superpone */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
           onClick={onClose}
         />
       )}
@@ -160,19 +160,24 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
       >
         {/* Header del sidebar */}
         <div className="border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-center h-16">
+          <div className="flex items-center justify-center h-16 px-4">
             {!isCollapsed && (
-              <h2 className="text-xl font-bold" style={{ color: '#3F7416' }}>
+              <h2 className="text-lg lg:text-xl font-bold text-center" style={{ color: '#3F7416' }}>
                 Minimarket Los Robles
               </h2>
+            )}
+            {isCollapsed && (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3F7416' }}>
+                <span className="text-white font-bold text-sm">MR</span>
+              </div>
             )}
           </div>
           
           {/* User Info */}
           {!isCollapsed && user && (
-            <div className="px-4 pb-4">
-              <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                <p className="text-sm font-semibold text-green-800">{user.name}</p>
+            <div className="px-3 lg:px-4 pb-4">
+              <div className="bg-green-50 rounded-lg p-2 lg:p-3 border border-green-100">
+                <p className="text-xs lg:text-sm font-semibold text-green-800 truncate">{user.name}</p>
                 <p className="text-xs text-green-600 capitalize">{user.role}</p>
                 <p className="text-xs text-green-500">ID: {user.id}</p>
               </div>

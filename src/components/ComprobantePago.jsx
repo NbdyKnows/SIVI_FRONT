@@ -15,26 +15,26 @@ const ComprobantePago = ({
   procesarVenta
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-fit">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 h-fit w-full">
       <div className="flex items-center mb-3">
         <FileText className="w-4 h-4 mr-2" style={{ color: '#633416' }} />
-        <h3 className="text-base font-semibold" style={{ color: '#633416' }}>Comprobante de Pago</h3>
+        <h3 className="text-sm sm:text-base font-semibold" style={{ color: '#633416' }}>Comprobante de Pago</h3>
       </div>
 
       <div className="space-y-4">
         {/* Desglose completo de totales como en la imagen */}
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-xs sm:text-sm">
             <span style={{ color: '#666666' }}>Subtotal S/</span>
             <span style={{ color: '#000000' }}>{subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-xs sm:text-sm">
             <span style={{ color: '#666666' }}>IGV S/</span>
             <span style={{ color: '#000000' }}>{igv.toFixed(2)}</span>
           </div>
           {/* Descuentos por productos */}
           {descuentos > 0 && (
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-xs sm:text-sm">
               <span style={{ color: '#666666' }}>Desc. Productos (-) S/</span>
               <span style={{ color: '#F59E0B' }}>{descuentos.toFixed(2)}</span>
             </div>
@@ -42,7 +42,7 @@ const ComprobantePago = ({
           
           {/* Descuento de fidelidad */}
           {descuentoFidelidad && descuentoFidelidad.porcentaje > 0 && (
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex justify-between items-center text-xs sm:text-sm">
               <span style={{ color: '#666666' }}>Desc. Fidelidad ({descuentoFidelidad.porcentaje}%) (-) S/</span>
               <span style={{ color: '#F59E0B' }}>{descuentoFidelidad.monto.toFixed(2)}</span>
             </div>

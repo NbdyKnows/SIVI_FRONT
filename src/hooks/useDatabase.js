@@ -210,6 +210,46 @@ export const useDatabase = () => {
     }));
   };
 
+  // Funciones para usuarios
+  const createUsuario = (datosUsuario) => {
+    const nuevoId = generateNextId('usuario');
+    const nuevoUsuario = {
+      id_usuario: nuevoId,
+      nombre: datosUsuario.nombre,
+      usuario: datosUsuario.usuario,
+      contrasenia: datosUsuario.contrasenia || '', // Contraseña temporal
+      id_rol: datosUsuario.id_rol,
+      fecha_registro: new Date().toISOString(),
+      habilitado: true,
+      reset: datosUsuario.reset || true // Por defecto necesita establecer contraseña
+    };
+
+    setData(prevData => ({
+      ...prevData,
+      usuario: [...prevData.usuario, nuevoUsuario]
+    }));
+
+    return nuevoUsuario;
+  };
+
+  const updateUsuario = (usuario, datosActualizados) => {
+    setData(prevData => ({
+      ...prevData,
+      usuario: prevData.usuario.map(u =>
+        u.usuario === usuario
+          ? { ...u, ...datosActualizados }
+          : u
+      )
+    }));
+  };
+
+  const generateNextId = (tableName) => {
+    const table = data[tableName];
+    if (!table || table.length === 0) return 1;
+    const idField = `id_${tableName === 'producto_cat' ? 'cat' : tableName.split('_')[0]}`;
+    return Math.max(...table.map(item => item[idField] || 0)) + 1;
+  };
+
   return {
     // Datos brutos
     data,
@@ -229,14 +269,11 @@ export const useDatabase = () => {
     updateInventario,
     updateProducto,
     deleteProducto,
+    createUsuario,
+    updateUsuario,
     
     // Utilidades
-    generateNextId: (tableName) => {
-      const table = data[tableName];
-      if (!table || table.length === 0) return 1;
-      const idField = `id_${tableName === 'producto_cat' ? 'cat' : tableName.split('_')[0]}`;
-      return Math.max(...table.map(item => item[idField] || 0)) + 1;
-    }
+    generateNextId
   };
 };
 

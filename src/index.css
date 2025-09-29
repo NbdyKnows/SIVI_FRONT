@@ -17,7 +17,7 @@ html, body {
   scroll-behavior: smooth;
 }
 
-/* Animaciones para modales */
+/* Animaciones para modales y login */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -58,6 +58,28 @@ html, body {
   }
 }
 
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -72,4 +94,26 @@ html, body {
 
 .animate-scale-out {
   animation: scale-out 0.15s ease-in;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Mejoras responsivas */
+@media (max-width: 1024px) {
+  .sidebar-collapsed {
+    width: 4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-mobile-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }

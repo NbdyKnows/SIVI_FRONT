@@ -1,89 +1,54 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Package, 
   Search, 
-  Plus, 
   Edit3, 
   Trash2, 
   AlertTriangle,
   TrendingUp,
-  Filter
+  Filter,
+  PackagePlus
 } from 'lucide-react';
-import { ModalInventario } from '../components/modales';
+
+import { useDatabase } from '../hooks/useDatabase';
+import colors from '../styles/colors';
 
 const Inventario = () => {
+  const navigate = useNavigate();
+  const { getInventarioWithProductoAndCategoria } = useDatabase();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  // Categorías según la BD
-  const [categorias] = useState([
-    { id_cat: 1, descripcion: 'Frutas' },
-    { id_cat: 2, descripcion: 'Verduras' },
-    { id_cat: 3, descripcion: 'Carnes' },
-    { id_cat: 4, descripcion: 'Aseo' },
-    { id_cat: 5, descripcion: 'Embutidos' },
-    { id_cat: 6, descripcion: 'Panadería' },
-    { id_cat: 7, descripcion: 'Bebidas' },
-    { id_cat: 8, descripcion: 'Abarrotes' },
-    { id_cat: 9, descripcion: 'Lácteos' }
-  ]);
 
-  // Datos de ejemplo para el inventario
-  const [inventoryItems, setInventoryItems] = useState([
-    {
-      id: 1,
-      name: 'Coca Cola 500ml',
-      category: 'Bebidas',
-      sku: 'CC500',
-      currentStock: 45,
-      minStock: 20,
-      maxStock: 100,
-      price: 3.50,
-      supplier: 'Coca Cola Company',
-      lastUpdated: '2024-01-15',
-      status: 'normal'
-    },
-    {
-      id: 2,
-      name: 'Pan Integral',
-      category: 'Panadería',
-      sku: 'PI001',
-      currentStock: 8,
-      minStock: 15,
-      maxStock: 50,
-      price: 4.20,
-      supplier: 'Panadería Central',
-      lastUpdated: '2024-01-14',
-      status: 'low'
-    },
-    {
-      id: 3,
-      name: 'Arroz Extra 1kg',
-      category: 'Abarrotes',
-      sku: 'AR1KG',
-      currentStock: 25,
-      minStock: 10,
-      maxStock: 80,
-      price: 5.80,
-      supplier: 'Distribuidora Norte',
-      lastUpdated: '2024-01-13',
-      status: 'normal'
-    },
-    {
-      id: 4,
-      name: 'Leche Entera 1L',
-      category: 'Lácteos',
-      sku: 'LE1L',
-      currentStock: 2,
-      minStock: 12,
-      maxStock: 60,
-      price: 4.90,
-      supplier: 'Gloria',
-      lastUpdated: '2024-01-12',
-      status: 'critical'
-    }
-  ]);
+  
+  // Obtener datos reales de la BD
+  const inventarioData = getInventarioWithProductoAndCategoria();
+
+  // Formatear datos del inventario real
+  const inventoryItems = inventarioData.map(item => {
+    const getStockStatus = (stock) => {
+      if (stock <= 10) return 'critical';
+      if (stock <= 20) return 'low';
+      return 'normal';
+    };
+
+    return {
+      id: item.id_inventario,
+      id_producto: item.id_producto,
+      name: item.producto,
+      category: item.categoria,
+      sku: item.sku,
+      currentStock: item.stock,
+      minStock: 10, // Valor por defecto
+      maxStock: 100, // Valor por defecto
+      price: item.precio,
+      supplier: 'Proveedor General', // Podríamos obtener esto de la BD si está disponible
+      lastUpdated: item.fecha_movimiento || new Date().toISOString(),
+      status: getStockStatus(item.stock),
+      habilitado: item.habilitado
+    };
+  }).filter(item => item.habilitado);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -107,63 +72,8 @@ const Inventario = () => {
     }
   };
 
-  const handleSave = (productData) => {
-    const categoria = categorias.find(cat => cat.id_cat === parseInt(productData.id_cat));
-    
-    if (editingProduct) {
-      // Editar producto existente
-      setInventoryItems(inventoryItems.map(item => 
-        item.id === editingProduct.id
-          ? {
-              ...item,
-              name: productData.descripcion,
-              id_cat: parseInt(productData.id_cat),
-              category: categoria.descripcion,
-              price: parseFloat(productData.precio),
-              currentStock: parseInt(productData.stock),
-              lastUpdated: productData.fecha,
-              habilitado: productData.habilitado
-            }
-          : item
-      ));
-    } else {
-      // Crear nuevo producto
-      const newItem = {
-        id: inventoryItems.length + 1,
-        name: productData.descripcion,
-        id_cat: parseInt(productData.id_cat),
-        category: categoria.descripcion,
-        sku: `P${String(inventoryItems.length + 1).padStart(3, '0')}`,
-        currentStock: parseInt(productData.stock),
-        minStock: 10,
-        maxStock: 100,
-        price: parseFloat(productData.precio),
-        supplier: 'Proveedor General',
-        lastUpdated: productData.fecha,
-        status: parseInt(productData.stock) <= 20 ? 'low' : 'normal',
-        habilitado: productData.habilitado
-      };
-      setInventoryItems([...inventoryItems, newItem]);
-    }
-
-    setShowModal(false);
-    setEditingProduct(null);
-  };
-
-  const handleEdit = (item) => {
-    setEditingProduct(item);
-    setShowModal(true);
-  };
-
-  const handleDelete = (itemId) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-      setInventoryItems(inventoryItems.map(item => 
-        item.id === itemId 
-          ? { ...item, habilitado: false }
-          : item
-      ));
-    }
-  };
+  // Inventario ahora es solo para visualización
+  // Las funciones de edición/creación están en la página de Gestión de Stock
 
 
 
@@ -171,13 +81,12 @@ const Inventario = () => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-    const isEnabled = item.habilitado !== false;
-    return matchesSearch && matchesCategory && isEnabled;
+    return matchesSearch && matchesCategory;
   });
 
-  const totalItems = inventoryItems.filter(item => item.habilitado !== false).length;
-  const lowStockItems = inventoryItems.filter(item => (item.status === 'low' || item.status === 'critical') && item.habilitado !== false).length;
-  const totalValue = inventoryItems.filter(item => item.habilitado !== false).reduce((sum, item) => sum + (item.currentStock * item.price), 0);
+  const totalItems = inventoryItems.length;
+  const lowStockItems = inventoryItems.filter(item => item.status === 'low' || item.status === 'critical').length;
+  const totalValue = inventoryItems.reduce((sum, item) => sum + (item.currentStock * item.price), 0);
 
   const categories = ['all', ...new Set(inventoryItems.map(item => item.category))];
 
@@ -190,16 +99,22 @@ const Inventario = () => {
             Inventario
           </h1>
           <p className="text-gray-600 mt-1">
-            Gestión y control de stock de productos
+            Visualización y control de productos en inventario
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
-          className="px-6 py-3 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-          style={{ backgroundColor: '#3F7416' }}
+          onClick={() => navigate('/app/inventario/agregar-stock')}
+          className="px-6 py-3 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+          style={{ backgroundColor: colors.primary.green }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = colors.states.hover;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = colors.primary.green;
+          }}
         >
-          <Plus className="w-5 h-5" />
-          Agregar Producto
+          <PackagePlus className="w-5 h-5" />
+          Gestión de Stock
         </button>
       </div>
 
@@ -300,9 +215,7 @@ const Inventario = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Disponibilidad
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
+
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -342,22 +255,7 @@ const Inventario = () => {
                       {getStatusText(item.status)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => handleEdit(item)}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+
                 </tr>
               ))}
             </tbody>
@@ -375,14 +273,7 @@ const Inventario = () => {
         </div>
       )}
 
-      {/* Modal Inventario */}
-      <ModalInventario
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        editingProduct={editingProduct}
-        onSave={handleSave}
-        categorias={categorias}
-      />
+
     </div>
   );
 };

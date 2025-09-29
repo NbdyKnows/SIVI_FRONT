@@ -16,26 +16,26 @@ const BusquedaProductos = ({
   clienteDNI
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden w-full">
       {/* Header con información del vendedor */}
-      <div className="px-4 py-2 border-b border-gray-200" style={{ backgroundColor: '#F9F9F9' }}>
+      <div className="px-3 sm:px-4 py-2 border-b border-gray-200" style={{ backgroundColor: '#F9F9F9' }}>
         <div className="flex items-center space-x-2">
           <User className="w-4 h-4" style={{ color: '#633416' }} />
-          <span className="text-sm font-medium" style={{ color: '#633416' }}>Vendedor: {selectedVendedor}</span>
+          <span className="text-xs sm:text-sm font-medium" style={{ color: '#633416' }}>Vendedor: {selectedVendedor}</span>
         </div>
       </div>
       
       {/* Área de búsqueda principal */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {/* Búsqueda con controles - Aplicando Ley de Fitts con targets más grandes */}
-        <div className="flex space-x-3 mb-4">
+        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
             placeholder="Buscar por código, nombre o categoría..."
           />
           {searchTerm && (

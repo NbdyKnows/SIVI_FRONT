@@ -8,72 +8,42 @@ import {
   CheckCircle,
   Calendar
 } from 'lucide-react';
-import { ModalSelectorProductos } from '../components/modales';
+import { ModalSelectorProductos, ModalInventario } from '../components/modales';
+import { useDatabase } from '../hooks/useDatabase';
+import colors from '../styles/colors';
 
 const AgregarStock = () => {
+  const { getInventarioWithProductoAndCategoria, getProveedoresActivos, getCategorias, addProducto } = useDatabase();
+  
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductSelector, setShowProductSelector] = useState(false);
+  const [showNewProductModal, setShowNewProductModal] = useState(false);
   const [stockEntry, setStockEntry] = useState({
     id_producto: '',
     cantidad: '',
     precio: '',
-    fecha: new Date().toISOString().split('T')[0],
     id_proveedor: '',
     notes: ''
   });
 
-  // Productos disponibles basados en la BD (tabla producto + inventario)
-  const availableProducts = [
-    {
-      id_producto: 1,
-      descripcion: 'Aceite Primor',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 50,
-      precio: 12.50
-    },
-    {
-      id_producto: 2,
-      descripcion: 'Huevos LA CALERA',
-      id_cat: 3,
-      categoria: 'Carnes',
-      stock: 29,
-      precio: 8.50
-    },
-    {
-      id_producto: 3,
-      descripcion: 'Pan Bimbo',
-      id_cat: 6,
-      categoria: 'Panadería',
-      stock: 40,
-      precio: 4.20
-    },
-    {
-      id_producto: 4,
-      descripcion: 'Laive Sin Lactosa',
-      id_cat: 9,
-      categoria: 'Lácteos',
-      stock: 75,
-      precio: 5.80
-    },
-    {
-      id_producto: 5,
-      descripcion: 'Papas INKA CHIPS',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 30,
-      precio: 3.50
-    }
-  ];
+  // Obtener datos reales de la BD
+  const inventarioData = getInventarioWithProductoAndCategoria();
+  const proveedoresData = getProveedoresActivos();
+  const categoriasData = getCategorias();
 
-  // Proveedores disponibles basados en la BD (tabla proveedor)
-  const [proveedores] = useState([
-    { id_proveedor: 1, descripcion: 'Distribuidora Norte', telefono: '987654321' },
-    { id_proveedor: 2, descripcion: 'Coca Cola Company', telefono: '912345678' },
-    { id_proveedor: 3, descripcion: 'Panadería Central', telefono: '945678912' },
-    { id_proveedor: 4, descripcion: 'Gloria S.A.', telefono: '998877665' },
-    { id_proveedor: 5, descripcion: 'Alicorp S.A.A.', telefono: '966554433' }
-  ]);
+  // Formatear productos disponibles para el selector
+  const availableProducts = inventarioData.map(item => ({
+    id_producto: item.id_producto,
+    descripcion: item.producto,
+    id_cat: item.id_cat,
+    categoria: item.categoria,
+    stock: item.stock,
+    precio: item.precio,
+    sku: item.sku
+  }));
+
+  // Usar proveedores reales de la BD
+  const proveedores = proveedoresData;
 
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
@@ -98,13 +68,14 @@ const AgregarStock = () => {
     }
 
     // Simular creación de movimiento_cab y movimiento_det según BD
+    const fechaActual = new Date().toISOString();
     const movimientoCab = {
       id_movimiento_cab: Date.now(),
       id_operacion: null,
       id_usuario: 1, // Usuario actual del contexto
       entrada_salida: 1, // 1 para entrada
       codigo: `MOV${String(Date.now()).slice(-6)}`,
-      fecha: new Date(stockEntry.fecha).toISOString(),
+      fecha: fechaActual,
       habilitado: true
     };
 
@@ -133,13 +104,28 @@ const AgregarStock = () => {
     alert('Stock agregado exitosamente');
   };
 
+  const handleNewProductSave = (productData) => {
+    try {
+      const newProduct = addProducto({
+        descripcion: productData.descripcion,
+        id_cat: parseInt(productData.id_cat)
+      });
+      alert(`Nuevo producto "${newProduct.descripcion}" creado exitosamente. Ahora puedes seleccionarlo para agregar stock.`);
+      setShowNewProductModal(false);
+      // Recargar la página para actualizar la lista de productos
+      window.location.reload();
+    } catch (error) {
+      console.error('Error al crear producto:', error);
+      alert('Error al crear el producto');
+    }
+  };
+
   const handleCancel = () => {
     setSelectedProduct(null);
     setStockEntry({
       id_producto: '',
       cantidad: '',
       precio: '',
-      fecha: new Date().toISOString().split('T')[0],
       id_proveedor: '',
       notes: ''
     });
@@ -150,13 +136,27 @@ const AgregarStock = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#3F7416' }}>
-            Agregar Stock
+          <h1 className="text-3xl font-bold" style={{ color: colors.primary.brown }}>
+            Gestión de Stock
           </h1>
           <p className="text-gray-600 mt-1">
-            Registra la entrada de nuevos productos al inventario
+            Crea nuevos productos o registra entrada de stock al inventario
           </p>
         </div>
+        <button
+          onClick={() => setShowNewProductModal(true)}
+          className="px-6 py-3 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+          style={{ backgroundColor: colors.primary.green }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = colors.states.hover;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = colors.primary.green;
+          }}
+        >
+          <Plus className="w-5 h-5" />
+          Nuevo Producto
+        </button>
       </div>
 
       {/* Main Form */}
@@ -195,7 +195,7 @@ const AgregarStock = () => {
                     </div>
                     <div>
                       <p className="font-semibold text-green-900">{selectedProduct.descripcion}</p>
-                      <p className="text-sm text-green-700">ID: {selectedProduct.id_producto} | Stock actual: {selectedProduct.stock} | Precio: S/. {selectedProduct.precio}</p>
+                      <p className="text-sm text-green-700">{selectedProduct.sku} | {selectedProduct.categoria} | Stock actual: {selectedProduct.stock} | Precio: S/. {selectedProduct.precio.toFixed(2)}</p>
                     </div>
                   </div>
                   <button
@@ -262,17 +262,28 @@ const AgregarStock = () => {
                 />
               </div>
 
-              {/* Fecha de Movimiento */}
+              {/* Fecha y Hora de Registro (Solo lectura) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha de Movimiento *
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  Fecha y Hora de Registro
                 </label>
                 <input
-                  type="date"
-                  value={stockEntry.fecha}
-                  onChange={(e) => handleInputChange('fecha', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  type="text"
+                  value={new Date().toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  La fecha y hora se registra automáticamente
+                </p>
               </div>
 
 
@@ -301,7 +312,7 @@ const AgregarStock = () => {
                 <div>
                   <p className="text-sm font-medium text-blue-800">Información importante</p>
                   <p className="text-sm text-blue-700 mt-1">
-                    Este movimiento se registrará en la tabla movimiento_det. Los campos marcados con (*) son obligatorios.
+                    Este movimiento se registrará automáticamente con la fecha y hora actual. Los campos marcados con (*) son obligatorios.
                   </p>
                 </div>
               </div>
@@ -320,8 +331,14 @@ const AgregarStock = () => {
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: '#3F7416' }}
+                className="px-6 py-2 text-white rounded-lg transition-all duration-200"
+                style={{ backgroundColor: colors.primary.green }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = colors.states.hover;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = colors.primary.green;
+                }}
               >
                 <Save className="w-4 h-4 inline mr-2" />
                 Guardar Entrada
@@ -367,6 +384,15 @@ const AgregarStock = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal para Nuevo Producto */}
+      <ModalInventario
+        isOpen={showNewProductModal}
+        onClose={() => setShowNewProductModal(false)}
+        editingProduct={null}
+        onSave={handleNewProductSave}
+        categorias={categoriasData}
+      />
     </div>
   );
 };

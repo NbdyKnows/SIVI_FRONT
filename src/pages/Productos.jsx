@@ -5,146 +5,32 @@ import {
   Package,
   Eye
 } from 'lucide-react';
+import { useDatabase } from '../hooks/useDatabase';
 
 const Productos = () => {
+  const { getInventarioWithProductoAndCategoria, getCategorias } = useDatabase();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
 
-  // Simulando datos de la BD
-  const [categorias] = useState([
-    { id_cat: 1, descripcion: 'Frutas' },
-    { id_cat: 2, descripcion: 'Verduras' },
-    { id_cat: 3, descripcion: 'Carnes' },
-    { id_cat: 4, descripcion: 'Aseo' },
-    { id_cat: 5, descripcion: 'Embutidos' },
-    { id_cat: 6, descripcion: 'Panadería' },
-    { id_cat: 7, descripcion: 'Bebidas' },
-    { id_cat: 8, descripcion: 'Abarrotes' },
-    { id_cat: 9, descripcion: 'Lácteos' }
-  ]);
+  // Obtener datos reales de la BD
+  const inventarioData = getInventarioWithProductoAndCategoria();
+  const categorias = getCategorias();
 
-  const productos = [
-    {
-      id_producto: 1,
-      descripcion: 'Aceite Primor',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 50,
-      precio: 12.50,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 2,
-      descripcion: 'Huevos LA CALERA',
-      id_cat: 3,
-      categoria: 'Carnes',
-      stock: 29,
-      precio: 8.50,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 3,
-      descripcion: 'Pan Bimbo',
-      id_cat: 6,
-      categoria: 'Panadería',
-      stock: 40,
-      precio: 4.20,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 4,
-      descripcion: 'Laive Sin Lactosa',
-      id_cat: 9,
-      categoria: 'Lácteos',
-      stock: 75,
-      precio: 5.80,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 5,
-      descripcion: 'Papas INKA CHIPS',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 30,
-      precio: 3.50,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 6,
-      descripcion: 'Tomate Italiano',
-      id_cat: 2,
-      categoria: 'Verduras',
-      stock: 120,
-      precio: 4.00,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 7,
-      descripcion: 'Atún Florida',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 35,
-      precio: 6.80,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 8,
-      descripcion: 'Cerveza PILSEN',
-      id_cat: 7,
-      categoria: 'Bebidas',
-      stock: 31,
-      precio: 4.50,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 9,
-      descripcion: 'Yogurt Gloria',
-      id_cat: 9,
-      categoria: 'Lácteos',
-      stock: 60,
-      precio: 3.20,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 10,
-      descripcion: 'Arroz Extra Faraón',
-      id_cat: 8,
-      categoria: 'Abarrotes',
-      stock: 52,
-      precio: 5.80,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 11,
-      descripcion: 'Gaseosa Inca Kola',
-      id_cat: 7,
-      categoria: 'Bebidas',
-      stock: 48,
-      precio: 3.50,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    },
-    {
-      id_producto: 12,
-      descripcion: 'Detergente Patito',
-      id_cat: 4,
-      categoria: 'Aseo',
-      stock: 34,
-      precio: 12.90,
-      habilitado: true,
-      imagen: '/api/placeholder/200/200'
-    }
-  ];
+  // Formatear datos del inventario real para el catálogo
+  const productos = inventarioData
+    .filter(item => item.habilitado) // Solo productos habilitados
+    .map(item => ({
+      id_producto: item.id_producto,
+      descripcion: item.producto,
+      id_cat: item.id_cat,
+      categoria: item.categoria,
+      stock: item.stock,
+      precio: item.precio,
+      habilitado: item.habilitado,
+      sku: item.sku,
+      fecha_movimiento: item.fecha_movimiento
+    }));
 
   const filteredProducts = productos.filter(product => {
     const matchesSearch = product.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
@@ -289,7 +175,7 @@ const Productos = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">Código:</span>
                     <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-                      P{String(product.id_producto).padStart(3, '0')}
+                      {product.sku}
                     </span>
                   </div>
                 </div>

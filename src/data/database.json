@@ -20,7 +20,7 @@
       "contrasenia": "admin123",
       "nombre": "Administrador Principal",
       "habilitado": true,
-      "reset": true,
+      "reset": false,
       "id_rol": 1
     },
     {

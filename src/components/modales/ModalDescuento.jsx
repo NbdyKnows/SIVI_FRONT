@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Percent, Tag, Calendar, Search, Package, Grid, AlertCircle, CheckCircle } from 'lucide-react';
+import { useDatabase } from '../../hooks/useDatabase';
 
 const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
+  const { getInventarioWithProductoAndCategoria, getCategorias } = useDatabase();
+  
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -18,25 +21,31 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Datos de ejemplo para productos y categorías
-  const productosDisponibles = [
-    { id: 1, nombre: 'Coca Cola 500ml', categoria: 'Bebidas', precio: 3.50 },
-    { id: 2, nombre: 'Galletas Oreo', categoria: 'Snacks', precio: 4.20 },
-    { id: 3, nombre: 'Leche Gloria 1L', categoria: 'Lácteos', precio: 4.80 },
-    { id: 4, nombre: 'Detergente Ariel', categoria: 'Limpieza', precio: 12.90 },
-    { id: 5, nombre: 'Pan Bimbo', categoria: 'Panadería', precio: 3.20 },
-    { id: 6, nombre: 'Yogurt Gloria', categoria: 'Lácteos', precio: 2.50 },
-    { id: 7, nombre: 'Papas Lays', categoria: 'Snacks', precio: 3.80 },
-    { id: 8, nombre: 'Agua San Luis', categoria: 'Bebidas', precio: 1.50 }
-  ];
+  // Obtener datos reales de la base de datos
+  const inventarioData = getInventarioWithProductoAndCategoria();
+  const categoriasData = getCategorias();
 
-  const categoriasDisponibles = [
-    { id: 'bebidas', nombre: 'Bebidas', productos_count: 15 },
-    { id: 'snacks', nombre: 'Snacks', productos_count: 23 },
-    { id: 'lacteos', nombre: 'Lácteos', productos_count: 12 },
-    { id: 'limpieza', nombre: 'Limpieza', productos_count: 18 },
-    { id: 'panaderia', nombre: 'Panadería', productos_count: 8 }
-  ];
+  // Formatear productos para el modal (solo productos con stock)
+  const productosDisponibles = inventarioData
+    .filter(item => item.stock > 0)
+    .map(item => ({
+      id: item.id_producto,
+      nombre: item.producto,
+      categoria: item.categoria,
+      precio: item.precio,
+      stock: item.stock,
+      sku: item.sku
+    }));
+
+  // Formatear categorías para el modal
+  const categoriasDisponibles = categoriasData.map(categoria => {
+    const productosEnCategoria = productosDisponibles.filter(p => p.categoria === categoria.descripcion);
+    return {
+      id: categoria.id_cat,
+      nombre: categoria.descripcion,
+      productos_count: productosEnCategoria.length
+    };
+  }).filter(categoria => categoria.productos_count > 0); // Solo mostrar categorías con productos
 
   // Efecto para cargar datos del descuento si está editando
   useEffect(() => {
@@ -205,7 +214,8 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
   // Filtrar productos para búsqueda
   const productosFiltrados = productosDisponibles.filter(producto =>
     producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    producto.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+    producto.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    producto.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Filtrar categorías para búsqueda
@@ -463,7 +473,7 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1"
                 style={{ '--tw-ring-color': '#3F7416' }}
-                placeholder={`Buscar ${formData.tipo_aplicacion === 'producto' ? 'productos' : 'categorías'}...`}
+                placeholder={`Buscar ${formData.tipo_aplicacion === 'producto' ? 'productos por nombre, categoría o SKU' : 'categorías'}...`}
                 disabled={isLoading}
               />
             </div>
@@ -489,8 +499,14 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
                           disabled={isLoading}
                         />
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">{producto.nombre}</div>
-                          <div className="text-xs text-gray-500">{producto.categoria} - S/ {producto.precio}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {producto.nombre}
+                            <span className="ml-2 text-xs text-gray-400">({producto.sku})</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {producto.categoria} - S/ {producto.precio.toFixed(2)} 
+                            <span className="ml-2 text-green-600">Stock: {producto.stock}</span>
+                          </div>
                         </div>
                       </label>
                     );

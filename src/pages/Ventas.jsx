@@ -441,19 +441,19 @@ const Ventas = () => {
   }
 
   return (
-    <div className="bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold" style={{ color: '#3F7416' }}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#3F7416' }}>
               Nueva Venta
             </h1>
             <div className="flex items-center space-x-2">
               {/* Botón de desarrollo */}
               <button
                 onClick={limpiarDatosPrueba}
-                className="px-3 py-1 text-xs border rounded transition-colors"
+                className="px-2 sm:px-3 py-1 text-xs border rounded transition-colors"
                 style={{ borderColor: '#ff6b6b', color: '#ff6b6b' }}
                 onMouseEnter={(e) => {
                   e.target.style.backgroundColor = '#ff6b6b';
@@ -464,14 +464,14 @@ const Ventas = () => {
                   e.target.style.color = '#ff6b6b';
                 }}
               >
-                🧹 Limpiar Datos
+                🧹 Limpiar
               </button>
               <button
                 onClick={() => window.history.back()}
-                className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="flex items-center px-2 sm:px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Atrás
+                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Atrás</span>
               </button>
             </div>
           </div>
@@ -479,10 +479,10 @@ const Ventas = () => {
 
         {/* Notificación de Descuento de Fidelidad */}
         {mostrarDescuentoFidelidad && (
-          <div className="mb-4 p-4 rounded-lg border-l-4 animate-fade-in" style={{ backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }}>
-            <div className="flex items-center gap-3">
+          <div className="mb-4 p-3 sm:p-4 rounded-lg border-l-4 animate-fade-in" style={{ backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <div className="flex-shrink-0">
-                <Percent className="w-6 h-6" style={{ color: '#F59E0B' }} />
+                <Percent className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#F59E0B' }} />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold" style={{ color: '#92400E' }}>
@@ -493,8 +493,8 @@ const Ventas = () => {
                   <strong> Descuento automático del {descuentoFidelidad}% aplicado.</strong>
                 </p>
               </div>
-              <div className="text-right">
-                <span className="text-lg font-bold" style={{ color: '#F59E0B' }}>
+              <div className="text-right flex-shrink-0">
+                <span className="text-base sm:text-lg font-bold" style={{ color: '#F59E0B' }}>
                   -{descuentoFidelidad}%
                 </span>
               </div>
@@ -502,12 +502,12 @@ const Ventas = () => {
           </div>
         )}
 
-        {/* Contenido principal con altura natural */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        {/* Contenido principal responsive */}
+        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-4">
           {/* Panel izquierdo - Búsqueda y productos */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="xl:col-span-2 space-y-4 w-full">
             {/* Búsqueda de productos */}
-            <div className="flex-shrink-0">
+            <div className="w-full">
               <BusquedaProductos
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
@@ -525,19 +525,17 @@ const Ventas = () => {
             </div>
 
             {/* Tabla de productos en la venta */}
-            <div className={productosVenta.length > 0 ? "max-h-96 overflow-hidden" : ""}>
+            <div className={productosVenta.length > 0 ? "max-h-64 sm:max-h-80 xl:max-h-96 overflow-auto" : "w-full"}>
               <TablaProductos
                 productosVenta={productosVenta}
                 quitarProducto={quitarProducto}
                 editarCantidadProducto={editarCantidadProducto}
               />
             </div>
-
-
           </div>
 
           {/* Panel derecho - Comprobante de pago */}
-          <div className="self-start">
+          <div className="w-full xl:self-start">
             <ComprobantePago
               productosVenta={productosVenta}
               subtotal={subtotal}

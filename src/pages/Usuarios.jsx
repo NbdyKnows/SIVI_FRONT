@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Shield, UserCheck, Edit, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, UserPlus, Shield, UserCheck, Edit, Trash2, Key, RotateCcw } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
+import { ModalCrearUsuario, ModalEditarUsuario, ModalEstablecerContrasenia, ModalOlvideContrasenia } from '../components/modales';
 
 const Usuarios = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('todos');
-  const { database } = useDatabase();
+  
+  // Estados para modales
+  const [modalCrearUsuario, setModalCrearUsuario] = useState(false);
+  const [modalEditarUsuario, setModalEditarUsuario] = useState(false);
+  const [modalEstablecerContrasenia, setModalEstablecerContrasenia] = useState(false);
+  const [modalOlvideContrasenia, setModalOlvideContrasenia] = useState(false);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  
+  const { getUsuariosWithRol, createUsuario, updateUsuario, data } = useDatabase();
 
-  // Obtener usuarios con datos de rol
-  const usuariosConRol = database.usuario.map(usuario => {
-    const rol = database.rol.find(r => r.id_rol === usuario.id_rol);
-    return {
-      ...usuario,
-      rolDescripcion: rol?.descripcion || 'Sin rol',
-      codigo: `USER${String(usuario.id_usuario).padStart(3, '0')}`
-    };
-  });
+  // Obtener usuarios con datos de rol usando la función del hook
+  const usuariosConRol = getUsuariosWithRol().map(usuario => ({
+    ...usuario,
+    codigo: `USER${String(usuario.id_usuario).padStart(3, '0')}`
+  }));
 
   // Filtrar usuarios
   const usuariosFiltrados = usuariosConRol.filter(usuario => {
@@ -23,15 +28,84 @@ const Usuarios = () => {
                          usuario.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          usuario.codigo.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = roleFilter === 'todos' || usuario.rolDescripcion === roleFilter;
+    const matchesRole = roleFilter === 'todos' || usuario.rol_descripcion === roleFilter;
     
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesRole && usuario.habilitado;
   });
 
   // Estadísticas
   const totalUsuarios = usuariosConRol.length;
   const usuariosActivos = usuariosConRol.filter(u => u.habilitado).length;
-  const administradores = usuariosConRol.filter(u => u.rolDescripcion === 'admin').length;
+  const administradores = usuariosConRol.filter(u => u.rol_descripcion === 'admin').length;
+
+  // Funciones para manejar modales
+  const handleCrearUsuario = async (datosUsuario) => {
+    try {
+      const nuevoUsuario = await createUsuario(datosUsuario);
+      console.log('Usuario creado:', nuevoUsuario);
+      // Aquí podrías actualizar el estado o recargar la lista
+    } catch (error) {
+      console.error('Error al crear usuario:', error);
+    }
+  };
+
+  const handleEstablecerContrasenia = async (datosContrasenia) => {
+    try {
+      await updateUsuario(datosContrasenia.usuario, { 
+        contrasenia: datosContrasenia.nuevaContrasenia,
+        reset: false // Ya no necesita establecer contraseña
+      });
+      console.log('Contraseña establecida para:', datosContrasenia.usuario);
+    } catch (error) {
+      console.error('Error al establecer contraseña:', error);
+    }
+  };
+
+  const handleRecuperarContrasenia = async (usuario) => {
+    try {
+      // Simular verificación y envío de notificación
+      const usuarioEncontrado = usuariosConRol.find(u => u.usuario === usuario);
+      if (usuarioEncontrado) {
+        console.log('Solicitud de recuperación enviada para:', usuario);
+        return { success: true };
+      } else {
+        return { success: false, message: 'Usuario no encontrado' };
+      }
+    } catch (error) {
+      console.error('Error al solicitar recuperación:', error);
+      return { success: false, message: 'Error del servidor' };
+    }
+  };
+
+  const handleEstablecerContraseniaUsuario = (usuario) => {
+    setUsuarioSeleccionado(usuario);
+    setModalEstablecerContrasenia(true);
+  };
+
+  const handleResetearContrasenia = async (usuario) => {
+    try {
+      await updateUsuario(usuario.usuario, { reset: true });
+      console.log('Contraseña reseteada para:', usuario.usuario);
+      // Podrías mostrar una notificación de éxito aquí
+    } catch (error) {
+      console.error('Error al resetear contraseña:', error);
+    }
+  };
+
+  const handleEditarUsuario = (usuario) => {
+    setUsuarioSeleccionado(usuario);
+    setModalEditarUsuario(true);
+  };
+
+  const handleGuardarEdicionUsuario = async (datosUsuario) => {
+    try {
+      await updateUsuario(datosUsuario.usuario, datosUsuario);
+      console.log('Usuario actualizado:', datosUsuario);
+      // Aquí podrías actualizar el estado o recargar la lista
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -40,13 +114,23 @@ const Usuarios = () => {
         <h1 className="text-3xl font-bold" style={{ color: '#3F7416' }}>
           Usuarios
         </h1>
-        <button
-          className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-          style={{ backgroundColor: '#3F7416' }}
-        >
-          <UserPlus className="w-4 h-4 inline mr-2" />
-          Nuevo Usuario
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setModalOlvideContrasenia(true)}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+          >
+            <Key className="w-4 h-4 inline mr-2" />
+            Recuperar Contraseña
+          </button>
+          <button
+            onClick={() => setModalCrearUsuario(true)}
+            className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            style={{ backgroundColor: '#3F7416' }}
+          >
+            <UserPlus className="w-4 h-4 inline mr-2" />
+            Nuevo Usuario
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -148,6 +232,9 @@ const Usuarios = () => {
                   Estado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contraseña
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -177,12 +264,12 @@ const Usuarios = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      usuario.rolDescripcion === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      usuario.rolDescripcion === 'cajero' ? 'bg-blue-100 text-blue-800' :
+                      usuario.rol_descripcion === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      usuario.rol_descripcion === 'cajero' ? 'bg-blue-100 text-blue-800' :
                       'bg-green-100 text-green-800'
                     }`}>
-                      {usuario.rolDescripcion === 'admin' ? 'Administrador' : 
-                       usuario.rolDescripcion === 'cajero' ? 'Cajero' : 
+                      {usuario.rol_descripcion === 'admin' ? 'Administrador' : 
+                       usuario.rol_descripcion === 'cajero' ? 'Cajero' : 
                        'Inventario'}
                     </span>
                   </td>
@@ -196,15 +283,35 @@ const Usuarios = () => {
                       {usuario.habilitado ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      usuario.reset ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {usuario.reset ? 'Pendiente' : 'Configurada'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                      <Edit className="w-4 h-4 inline mr-1" />
-                      Editar
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <Trash2 className="w-4 h-4 inline mr-1" />
-                      Eliminar
-                    </button>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleEditarUsuario(usuario)}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        <Edit className="w-4 h-4 inline mr-1" />
+                        Editar
+                      </button>
+
+                      <button 
+                        onClick={() => handleResetearContrasenia(usuario)}
+                        className="text-orange-600 hover:text-orange-900"
+                      >
+                        <RotateCcw className="w-4 h-4 inline mr-1" />
+                        Reset
+                      </button>
+                      <button className="text-red-600 hover:text-red-900">
+                        <Trash2 className="w-4 h-4 inline mr-1" />
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -212,6 +319,40 @@ const Usuarios = () => {
           </table>
         </div>
       </div>
+
+      {/* Modales */}
+      <ModalCrearUsuario
+        isOpen={modalCrearUsuario}
+        onClose={() => setModalCrearUsuario(false)}
+        onSave={handleCrearUsuario}
+      />
+
+      <ModalEditarUsuario
+        isOpen={modalEditarUsuario}
+        onClose={() => {
+          setModalEditarUsuario(false);
+          setUsuarioSeleccionado(null);
+        }}
+        onSave={handleGuardarEdicionUsuario}
+        usuario={usuarioSeleccionado}
+        roles={data?.rol || []}
+      />
+
+      <ModalEstablecerContrasenia
+        isOpen={modalEstablecerContrasenia}
+        onClose={() => {
+          setModalEstablecerContrasenia(false);
+          setUsuarioSeleccionado(null);
+        }}
+        onSave={handleEstablecerContrasenia}
+        usuario={usuarioSeleccionado}
+      />
+
+      <ModalOlvideContrasenia
+        isOpen={modalOlvideContrasenia}
+        onClose={() => setModalOlvideContrasenia(false)}
+        onRecuperarContrasenia={handleRecuperarContrasenia}
+      />
     </div>
   );
 };

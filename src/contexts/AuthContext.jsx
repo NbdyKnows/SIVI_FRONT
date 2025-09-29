@@ -59,6 +59,15 @@ export const AuthProvider = ({ children }) => {
       // Guardar en localStorage
       localStorage.setItem('currentUser', JSON.stringify(foundUser));
       
+      // Verificar si necesita establecer contraseña
+      if (foundUser.reset) {
+        return { 
+          success: true, 
+          user: foundUser, 
+          requiresPasswordSetup: true // ← NUEVA PROPIEDAD
+        };
+      }
+      
       return { success: true, user: foundUser };
     }
     

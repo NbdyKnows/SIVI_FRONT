@@ -7,7 +7,6 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
     id_cat: '',
     precio: '',
     stock: '',
-    fecha: new Date().toISOString().split('T')[0],
     habilitado: true
   });
   const [errors, setErrors] = useState({});
@@ -23,7 +22,6 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
           id_cat: product.id_cat?.toString() || '',
           precio: product.price?.toString() || '',
           stock: product.currentStock?.toString() || '',
-          fecha: product.lastUpdated || new Date().toISOString().split('T')[0],
           habilitado: product.habilitado !== undefined ? product.habilitado : true
         });
       } else {
@@ -33,7 +31,6 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
           id_cat: '',
           precio: '',
           stock: '',
-          fecha: new Date().toISOString().split('T')[0],
           habilitado: true
         });
       }
@@ -77,9 +74,7 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
       newErrors.stock = 'El stock debe ser un número mayor o igual a 0';
     }
 
-    if (!formData.fecha) {
-      newErrors.fecha = 'La fecha es obligatoria';
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -107,7 +102,7 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
         category: categoria?.descripcion || 'Sin categoría',
         price: parseFloat(formData.precio),
         currentStock: parseInt(formData.stock),
-        lastUpdated: formData.fecha,
+        lastUpdated: new Date().toISOString(),
         habilitado: formData.habilitado
       };
 
@@ -136,7 +131,6 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
       id_cat: '',
       precio: '',
       stock: '',
-      fecha: new Date().toISOString().split('T')[0],
       habilitado: true
     });
     setErrors({});
@@ -276,27 +270,27 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
             )}
           </div>
 
-          {/* Fecha */}
+          {/* Fecha y Hora de Registro (Solo lectura) */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: '#666666' }}>
-              Fecha de Registro *
+              Fecha y Hora de Registro
             </label>
             <input
-              type="date"
-              value={formData.fecha}
-              onChange={(e) => handleInputChange('fecha', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
-                errors.fecha ? 'border-red-300' : 'border-gray-300'
-              }`}
-              style={{ '--tw-ring-color': '#3F7416' }}
-              disabled={isLoading}
+              type="text"
+              value={new Date().toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              })}
+              readOnly
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
             />
-            {errors.fecha && (
-              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {errors.fecha}
-              </p>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              La fecha y hora se registra automáticamente
+            </p>
           </div>
 
           {/* Estado */}
@@ -325,7 +319,7 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
               <div>
                 <p className="text-sm font-medium" style={{ color: '#2F5A0F' }}>Información</p>
                 <p className="text-sm mt-1" style={{ color: '#3F7416' }}>
-                  Todos los campos marcados con (*) son obligatorios.
+                  Los campos marcados con (*) son obligatorios. La fecha se registra automáticamente.
                 </p>
               </div>
             </div>
