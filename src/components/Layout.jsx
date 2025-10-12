@@ -7,45 +7,37 @@ import ChatAssistant from './ChatAssistant';
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   // Detectar cambios de anchura de la ventana
   useEffect(() => {
     const handleResize = () => {
       const newWidth = window.innerWidth;
       
-      // Si cambia de desktop a tablet/móvil (< 1024px), colapsar sidebar
-      if (windowWidth >= 1024 && newWidth < 1024) {
-        setSidebarCollapsed(true);
+      // En móvil/tablet (< 1024px), cerrar sidebar por defecto
+      if (newWidth < 1024) {
+        setSidebarOpen(false);
+        setSidebarCollapsed(false); // Expandido cuando se abre
       }
-      // Si cambia de tablet/móvil a desktop (>= 1024px), expandir sidebar
-      else if (windowWidth < 1024 && newWidth >= 1024) {
+      // En desktop (>= 1024px), abrir y expandir sidebar
+      else {
+        setSidebarOpen(true);
         setSidebarCollapsed(false);
       }
-      // En móvil muy pequeño (< 768px), cerrar sidebar completamente
-      if (newWidth < 768 && sidebarOpen) {
-        setSidebarOpen(false);
-      }
-      // En tablet/desktop, abrir sidebar si estaba cerrado
-      else if (newWidth >= 768 && !sidebarOpen) {
-        setSidebarOpen(true);
-      }
-      
-      setWindowWidth(newWidth);
     };
 
     // Configuración inicial basada en el tamaño de pantalla
     const initialWidth = window.innerWidth;
     if (initialWidth < 1024) {
-      setSidebarCollapsed(true);
-    }
-    if (initialWidth < 768) {
       setSidebarOpen(false);
+      setSidebarCollapsed(false);
+    } else {
+      setSidebarOpen(true);
+      setSidebarCollapsed(false);
     }
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [windowWidth, sidebarOpen]);
+  }, []);
 
   // Función para manejar el cierre del sidebar (especialmente en móviles)
   const handleCloseSidebar = () => {
@@ -58,7 +50,7 @@ const Layout = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen relative">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -67,12 +59,23 @@ const Layout = () => {
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content - Click fuera cierra sidebar en móvil */}
+      <div 
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
+        onClick={() => {
+          // Solo cerrar en móvil cuando sidebar está abierto
+          if (window.innerWidth < 1024 && sidebarOpen) {
+            handleCloseSidebar();
+          }
+        }}
+      >
         {/* Mobile Header - Solo visible en móviles */}
         <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation(); // Evitar que el click cierre el sidebar
+              setSidebarOpen(true);
+            }}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <Menu className="w-6 h-6" style={{ color: '#3F7416' }} />

@@ -140,26 +140,19 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
 
   return (
     <>
-      {/* Overlay para móviles - Solo mostrar en pantallas muy pequeñas donde la sidebar se superpone */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
-          onClick={onClose}
-        />
-      )}
-
       {/* Sidebar */}
       <div
         className={`
-          fixed left-0 z-30 transform transition-all duration-300 ease-in-out bg-white shadow-lg
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          fixed lg:relative left-0 top-0 z-40
+          transform transition-all duration-300 ease-in-out 
+          bg-white shadow-lg border-r border-gray-200
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isCollapsed ? 'w-16' : 'w-64'}
-          lg:translate-x-0 lg:static lg:z-auto
-          top-0 h-screen border-r border-gray-200
+          h-full flex flex-col
         `}
       >
         {/* Header del sidebar */}
-        <div className="border-b border-gray-200 bg-white">
+        <div className="border-b border-gray-200 bg-white flex-shrink-0">
           <div className="flex items-center justify-center h-16 px-4">
             {!isCollapsed && (
               <h2 className="text-lg lg:text-xl font-bold text-center" style={{ color: '#3F7416' }}>
@@ -186,11 +179,11 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 flex flex-col py-4 px-3">
+        <nav className="flex-1 flex flex-col py-4 px-3 min-h-0">
           {/* Toggle Button - Sobresaliendo hacia afuera */}
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex absolute top-20 -right-3 z-10 p-2 rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50 hover:shadow-lg transition-all duration-200"
+            className="hidden lg:flex absolute top-20 -right-3 z-50 p-2 rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50 hover:shadow-lg transition-all duration-200"
           >
             {isCollapsed ? (
               <ChevronRight className="w-4 h-4 text-gray-600" />
@@ -199,8 +192,8 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
             )}
           </button>
           
-          {/* Menu Items */}
-          <div className="flex-1">
+          {/* Menu Items - Con scroll solo cuando NO está colapsado */}
+          <div className={`flex-1 ${isCollapsed ? '' : 'overflow-y-auto'}`}>
             <ul className="space-y-2">
               {filteredMenuItems.map((item) => {
                 const IconComponent = item.icon;
