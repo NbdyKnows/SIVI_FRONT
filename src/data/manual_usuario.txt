@@ -1,0 +1,379 @@
+# MANUAL DEL USUARIO SIVI
+## Sistema de Inventario y Ventas Integrado
+
+**FECHA DE CREACIÓN:** Octubre 2025
+**VERSIÓN:** 1.0.0
+**PÚBLICO OBJETIVO:** Usuarios finales del sistema SIVI
+
+# 1. INTRODUCCIÓN
+
+Bienvenido a SIVI (Sistema de Inventario y Ventas Integrado), tu herramienta
+completa para gestionar un minimarket de manera eficiente y moderna.
+
+Este manual te guiará paso a paso por todas las funcionalidades del sistema,
+desde el inicio de sesión hasta las operaciones más avanzadas.
+
+# 2. ACCESO AL SISTEMA
+
+2.1 INICIO DE SESIÓN
+
+1. Abre tu navegador web
+2. Ve a la URL del sistema (generalmente http://localhost:5173 en desarrollo)
+3. Ingresa tu usuario y contraseña
+4. Haz clic en "Iniciar Sesión"
+
+USUARIOS POR DEFECTO:
+- Admin: usuario="admin", contraseña="admin123"
+- Cajero: usuario="cajero", contraseña="cajero123"
+- Inventario: usuario="inventario", contraseña="inventario123"
+
+2.2 RECUPERACIÓN DE CONTRASEÑA
+
+Si olvidaste tu contraseña:
+1. Contacta al administrador del sistema
+2. El admin puede resetear tu contraseña desde el módulo de Usuarios
+3. Al iniciar sesión, el sistema te pedirá establecer una nueva contraseña
+
+# 3. INTERFAZ DEL SISTEMA
+
+3.1 ELEMENTOS PRINCIPALES
+
+- **Barra lateral (Sidebar)**: Menú de navegación principal
+- **Área de contenido**: Zona donde se muestran las diferentes secciones
+- **Chat Assistant**: Roblecito, tu asistente virtual (esquina inferior derecha)
+- **Botón de menú**: En móviles, permite mostrar/ocultar la barra lateral
+
+3.2 NAVEGACIÓN
+
+- Usa la barra lateral para acceder a diferentes módulos
+- Cada usuario ve solo las opciones permitidas por su rol
+- El sidebar se colapsa automáticamente en pantallas pequeñas
+
+# 4. MÓDULO DE VENTAS
+
+4.1 ACCESO
+
+- Desde el menú lateral: "Ventas"
+- Solo disponible para roles: Admin, Cajero
+
+4.2 REALIZAR UNA VENTA
+
+1. **Buscar productos**:
+   - Escribe el nombre del producto en el campo de búsqueda
+   - O selecciona de la lista desplegable
+
+2. **Agregar al carrito**:
+   - Selecciona el producto
+   - Ingresa la cantidad deseada
+   - Haz clic en "Agregar"
+
+3. **Aplicar descuentos**:
+   - Los descuentos se aplican automáticamente
+   - Descuentos por producto específico
+   - Descuentos por categoría
+   - Descuento de fidelidad (10% por cada 10 compras en el mes)
+
+4. **Seleccionar cliente** (opcional):
+   - Haz clic en "Seleccionar Cliente"
+   - Busca por DNI o nombre
+   - O crea un cliente nuevo
+
+5. **Seleccionar método de pago**:
+   - Efectivo (por defecto)
+   - Otros métodos disponibles
+
+6. **Procesar venta**:
+   - Revisa el resumen de la venta
+   - Confirma los totales (subtotal, IGV, descuentos)
+   - Haz clic en "Procesar Venta"
+
+4.3 FUNCIONES ADICIONALES
+
+- **Quitar productos**: Haz clic en la X roja junto al producto
+- **Editar cantidades**: Modifica la cantidad directamente en la tabla
+- **Imprimir comprobante**: Después de procesar la venta
+
+# 5. MÓDULO DE CAJA CHICA
+
+5.1 ACCESO
+
+- Desde el menú lateral: "Caja Chica"
+- Disponible para roles: Admin, Cajero
+
+5.2 GESTIONAR MOVIMIENTOS
+
+1. **Ver movimientos actuales**:
+   - Lista de entradas y salidas de efectivo
+   - Saldos actualizados
+
+2. **Agregar movimiento**:
+   - Selecciona tipo: Entrada o Salida
+   - Ingresa monto y descripción
+   - Confirma la operación
+
+# 6. MÓDULO DE PRODUCTOS
+
+6.1 ACCESO
+
+- Desde el menú lateral: "Productos"
+- Disponible para roles: Admin, Inventario
+
+6.2 VER PRODUCTOS
+
+- Lista completa de productos
+- Información: nombre, categoría, stock, precio
+- Búsqueda por nombre o categoría
+- Filtros disponibles
+
+6.3 AGREGAR PRODUCTO
+
+1. Haz clic en "Agregar Producto"
+2. Completa los campos:
+   - Descripción
+   - Categoría
+   - Precio de venta
+   - Stock inicial
+3. Guarda los cambios
+
+6.4 EDITAR PRODUCTO
+
+1. En la lista de productos, haz clic en "Editar"
+2. Modifica los campos necesarios
+3. Guarda los cambios
+
+6.5 ELIMINAR PRODUCTO
+
+1. Haz clic en "Eliminar" junto al producto
+2. Confirma la eliminación
+3. El producto se marca como inhabilitado
+
+# 7. MÓDULO DE INVENTARIO
+
+7.1 ACCESO
+
+- Desde el menú lateral: "Inventario"
+- Disponible para roles: Admin, Inventario
+
+7.2 VER INVENTARIO
+
+- Lista de productos con stock actual
+- Información de movimientos
+- Fechas de última actualización
+
+7.3 AGREGAR STOCK
+
+1. Ve a "Inventario" > "Agregar Stock"
+2. Selecciona productos
+3. Ingresa cantidades a agregar
+4. Especifica proveedor y precio de compra
+5. Confirma la operación
+
+# 8. MÓDULO DE DESCUENTOS
+
+8.1 ACCESO
+
+- Desde el menú lateral: "Productos" > "Descuentos"
+- Disponible para roles: Admin, Inventario
+
+8.2 GESTIONAR DESCUENTOS
+
+1. **Ver descuentos activos**:
+   - Lista de promociones vigentes
+   - Fechas de inicio y fin
+
+2. **Crear descuento**:
+   - Selecciona tipo: Producto específico, Categoría, o General
+   - Define porcentaje de descuento
+   - Establece fechas de vigencia
+   - Activa el descuento
+
+9. MÓDULO DE COMPRAS
+
+9.1 ACCESO
+
+- Desde el menú lateral: "Compras"
+- Disponible para roles: Admin
+
+9.2 GESTIONAR ÓRDENES DE COMPRA
+
+1. **Crear orden de compra**:
+   - Selecciona proveedor
+   - Agrega productos y cantidades
+   - Define precios
+
+2. **Aprobar órdenes**:
+   - Revisa órdenes pendientes
+   - Aprueba o rechaza
+
+3. **Recibir mercadería**:
+   - Confirma recepción de productos
+   - Actualiza inventario automáticamente
+
+10. MÓDULO DE REPORTES
+
+10.1 ACCESO
+
+- Desde el menú lateral: "Reportes"
+- Disponible para roles: Admin
+
+10.2 TIPOS DE REPORTES
+
+1. **Reportes de Ventas**:
+   - Por fechas
+   - Por productos
+   - Por clientes
+
+2. **Reportes de Inventario**:
+   - Stock actual
+   - Movimientos históricos
+
+3. **Reportes de Compras**:
+   - Órdenes realizadas
+   - Proveedores
+
+11. MÓDULO DE USUARIOS
+
+11.1 ACCESO
+
+- Desde el menú lateral: "Usuarios"
+- Solo disponible para rol: Admin
+
+11.2 GESTIONAR USUARIOS
+
+1. **Ver usuarios**:
+   - Lista completa de usuarios
+   - Roles asignados
+   - Estado (habilitado/deshabilitado)
+
+2. **Crear usuario**:
+   - Completa nombre, usuario, rol
+   - El sistema genera contraseña temporal
+   - Usuario debe cambiar contraseña al iniciar sesión
+
+3. **Editar usuario**:
+   - Modifica información
+   - Cambia rol si es necesario
+
+4. **Eliminar usuario**:
+   - Deshabilita usuario (no elimina físicamente)
+
+12. CHAT ASSISTANT - ROBLECITO
+
+12.1 ACCESO
+
+- Botón flotante en esquina inferior derecha
+- Disponible para todos los usuarios
+
+12.2 FUNCIONES
+
+- **Consultas generales**: Pregunta sobre el sistema
+- **Ayuda contextual**: Dudas sobre módulos específicos
+- **Soporte técnico**: Problemas comunes y soluciones
+
+12.3 USO
+
+1. Haz clic en el botón de Roblecito
+2. Escribe tu pregunta o consulta
+3. Espera la respuesta
+4. El chat guarda el historial de conversación
+
+13. FUNCIONES AVANZADAS
+
+13.1 ATAJOS DE TECLADO
+
+- **Ctrl + Shift + R**: Hard refresh (fuerza recarga)
+- **F12**: Abrir herramientas de desarrollo
+- **Ctrl + Shift + I**: Inspeccionar elemento
+
+13.2 EXPORTACIÓN DE DATOS
+
+- Los comprobantes se pueden imprimir
+- Datos accesibles vía herramientas de desarrollo
+- Backup manual a través de localStorage
+
+13.3 PERSONALIZACIÓN
+
+- El sistema recuerda tus preferencias
+- Configuración de notificaciones (futuro)
+- Temas de color (futuro)
+
+14. SOLUCIÓN DE PROBLEMAS COMUNES
+
+14.1 PROBLEMAS DE ACCESO
+
+**No puedo iniciar sesión:**
+- Verifica usuario y contraseña
+- Mayúsculas/minúsculas importan
+- Contacta al admin si olvidaste la contraseña
+
+**El sistema está lento:**
+- Cierra otras pestañas del navegador
+- Limpia caché: Ctrl+Shift+R
+- Reinicia el navegador
+
+14.2 PROBLEMAS DE FUNCIONALIDAD
+
+**Los cambios no se guardan:**
+- Verifica conexión a internet
+- localStorage podría estar lleno
+- Intenta refrescar la página
+
+**Productos no aparecen en búsqueda:**
+- Verifica que estén habilitados
+- Revisa stock disponible
+- Contacta al administrador de inventario
+
+**Errores en ventas:**
+- Verifica stock disponible
+- Revisa precios y descuentos
+- Confirma datos del cliente
+
+14.3 PROBLEMAS TÉCNICOS
+
+**Página en blanco:**
+- Verifica que el servidor esté corriendo (npm run dev)
+- Limpia caché del navegador
+- Verifica URL correcta
+
+**Errores de JavaScript:**
+- Abre consola del navegador (F12)
+- Copia el error y contacta soporte
+- Intenta refrescar la página
+
+15. GLOSARIO DE TÉRMINOS
+
+- **Comprobante**: Recibo o boleta de venta
+- **IGV**: Impuesto General a las Ventas (18%)
+- **SKU**: Código único de producto
+- **Stock**: Cantidad disponible de producto
+- **Proveedor**: Empresa que suministra productos
+- **Categoría**: Grupo al que pertenece un producto
+- **Descuento**: Reducción en el precio de venta
+- **Fidelidad**: Programa de descuentos por compras recurrentes
+- **Movimiento**: Entrada o salida de productos/inventario
+- **Orden de compra**: Solicitud de productos a proveedor
+- **Sidebar**: Barra lateral de navegación
+
+16. CONTACTO Y SOPORTE
+
+Para obtener ayuda adicional:
+
+1. **Roblecito**: Tu asistente virtual integrado
+2. **Administrador del sistema**: Contacta al encargado técnico
+3. **Repositorio del proyecto**: https://github.com/NbdyKnows/SIVI_FRONT
+4. **Issues**: Reporta problemas en GitHub
+
+17. VERSIÓN Y ACTUALIZACIONES
+
+- **Versión actual**: 1.0.0
+- **Última actualización**: Octubre 2025
+- **Próximas features**:
+  - Backup automático
+  - Reportes avanzados
+  - Integración con backend real
+  - App móvil
+
+¡Gracias por usar SIVI!
+Esperamos que este sistema haga tu trabajo más eficiente y placentero.
+
+*FIN DEL MANUAL DEL USUARIO*

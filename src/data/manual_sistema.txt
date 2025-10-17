@@ -1,0 +1,262 @@
+# MANUAL DEL SISTEMA SIVI
+Sistema de Inventario y Ventas Integrado
+
+**FECHA DE CREACIÓN:** Octubre 2025  
+**VERSIÓN:** 1.0.0  
+**AUTOR:** Sistema SIVI
+
+## 1. DESCRIPCIÓN GENERAL DEL SISTEMA
+
+SIVI es un sistema web completo para la gestión integral de minimarkets, desarrollado con tecnologías modernas de frontend. Incluye módulos para ventas, inventario, compras, usuarios, reportes y caja chica.
+
+## 2. ARQUITECTURA DEL SISTEMA
+
+### 2.1 TECNOLOGÍAS PRINCIPALES
+- **Frontend:** React 19.1.1 + Vite 7.1.7
+- **UI Framework:** Tailwind CSS 4.1.13
+- **Enrutamiento:** React Router DOM 7.9.2
+- **Iconos:** Lucide React 0.544.0
+- **Base de Datos:** JSON simulada con localStorage
+- **Autenticación:** Context API + localStorage
+
+### 2.2 ESTRUCTURA DE ARCHIVOS
+```
+SIVI_FRONT/
+├── public/                 # Recursos estáticos
+├── src/
+│   ├── assets/            # Imágenes y multimedia
+│   ├── components/        # Componentes reutilizables
+│   │   ├── modales/       # 15 modales del sistema
+│   │   ├── Layout.jsx     # Layout principal con sidebar
+│   │   ├── Sidebar.jsx    # Menú lateral de navegación
+│   │   └── [componentes específicos]
+│   ├── contexts/          # Context API
+│   │   └── AuthContext.jsx # Gestión de autenticación
+│   ├── data/              # Base de datos simulada
+│   │   └── database.json  # Datos iniciales
+│   ├── hooks/             # Custom Hooks
+│   │   └── useDatabase.js # CRUD con database.json
+│   ├── pages/             # Páginas principales (9 páginas)
+│   ├── styles/            # Configuración de estilos
+│   └── App.jsx            # Componente raíz
+├── server/                # Backend opcional para chat
+└── package.json           # Dependencias y scripts
+```
+
+### 2.3 BASE DE DATOS (JSON)
+**Tablas principales:**
+- `rol`: Definición de roles (admin, cajero, inventario)
+- `usuario`: Usuarios del sistema con credenciales
+- `producto_cat`: Categorías de productos
+- `producto`: Catálogo de productos
+- `proveedor`: Proveedores registrados
+- `inventario`: Stock y precios actuales
+- `movimiento_cab/det`: Movimientos de entrada/salida
+- `orden_compra_cab/det`: Órdenes de compra
+- `oferta`: Descuentos y promociones
+- `cliente`: Clientes registrados
+- `comprobante_cab/det`: Ventas realizadas
+
+## 3. INSTALACIÓN Y CONFIGURACIÓN
+
+### 3.1 REQUISITOS DEL SISTEMA
+- **Node.js:** v18.0.0 o superior (recomendado v20.x)
+- **npm:** v9.0.0 o superior
+- **Navegadores:** Chrome, Firefox, Safari, Edge (últimas 2 versiones)
+
+### 3.2 INSTALACIÓN
+1. Clonar el repositorio:
+   ```
+   git clone https://github.com/NbdyKnows/SIVI_FRONT.git
+   cd SIVI_FRONT
+   ```
+
+2. Instalar dependencias:
+   ```
+   npm install
+   ```
+
+3. Ejecutar en desarrollo:
+   ```
+   npm run dev
+   ```
+
+4. Construir para producción:
+   ```
+   npm run build
+   ```
+
+5. Vista previa de producción:
+   ```
+   npm run preview
+   ```
+
+### 3.3 CONFIGURACIÓN DEL SERVIDOR DE CHAT (OPCIONAL)
+1. Instalar dependencias del servidor:
+   ```
+   cd server
+   npm install
+   ```
+
+2. Configurar variables de entorno (.env):
+   ```
+   GROQ_API_KEY=tu_api_key_aqui
+   GROQ_MODEL=llama-3.1-8b-instant
+   PORT=3001
+   ```
+
+3. Ejecutar el servidor:
+   ```
+   npm start
+   ```
+
+## 4. FUNCIONALIDADES DEL SISTEMA
+
+### 4.1 GESTIÓN DE USUARIOS Y AUTENTICACIÓN
+- Sistema de roles: Admin, Cajero, Inventario
+- Autenticación basada en credenciales
+- Control de permisos por funcionalidad
+- Gestión de usuarios (crear, editar, eliminar)
+- Reset de contraseñas
+
+### 4.2 GESTIÓN DE VENTAS
+- Búsqueda de productos por nombre/código/categoría
+- Carrito de compras con cantidades
+- Descuentos automáticos (producto, categoría, fidelidad)
+- Cálculo automático de IGV (18%)
+- Múltiples métodos de pago
+- Generación de comprobantes
+- Gestión de clientes
+
+### 4.3 GESTIÓN DE INVENTARIO
+- Visualización de stock por producto
+- Movimientos de entrada/salida
+- Agregar stock desde compras
+- Control de precios
+- Alertas de stock mínimo
+- Seguimiento de fechas de movimiento
+
+### 4.4 GESTIÓN DE COMPRAS
+- Órdenes de compra
+- Gestión de proveedores
+- Recepción de mercadería
+- Actualización automática de inventario
+
+### 4.5 GESTIÓN DE PRODUCTOS
+- Catálogo de productos
+- Categorización
+- Gestión de descuentos y ofertas
+- Precios y stock
+
+### 4.6 REPORTES
+- Reportes de ventas por fecha
+- Reportes de inventario
+- Reportes de compras
+- Estadísticas generales
+
+### 4.7 CAJA CHICA
+- Movimientos de entrada/salida
+- Control de efectivo
+- Seguimiento de operaciones
+
+## 5. CONFIGURACIÓN Y PERSONALIZACIÓN
+
+### 5.1 COLORES Y TEMAS
+Los colores principales están definidos en `src/styles/colors.js`:
+- Verde principal: #3F7416
+- Verde secundario: #633416
+- Fondo: #F5F6F8
+
+### 5.2 PERMISOS POR ROL
+- **Admin:** Acceso completo a todas las funcionalidades
+- **Cajero:** Ventas y caja chica
+- **Inventario:** Productos, descuentos, inventario, agregar stock
+
+### 5.3 CONFIGURACIÓN DE BASE DE DATOS
+- Los datos iniciales están en `src/data/database.json`
+- La persistencia se maneja con localStorage
+- Para resetear datos: `localStorage.clear()` en consola del navegador
+
+## 6. MANTENIMIENTO Y SOLUCIÓN DE PROBLEMAS
+
+### 6.1 PROBLEMAS COMUNES
+1. **El proyecto no inicia:**
+   - Verificar Node.js y npm instalados
+   - Ejecutar: `rm -rf node_modules && npm install`
+
+2. **Cambios no se reflejan:**
+   - Hard refresh: Ctrl+Shift+R
+   - Limpiar caché de Vite: `rm -rf .vite`
+
+3. **localStorage corrupto:**
+   - En consola: `localStorage.clear()`
+
+4. **Permisos no funcionan:**
+   - Verificar roles en database.json
+   - Verificar usuario actual en localStorage
+
+### 6.2 LOGS Y DEBUGGING
+- Consola del navegador para errores de frontend
+- Terminal para errores del servidor de desarrollo
+- Network tab para verificar requests
+
+### 6.3 BACKUPS
+- Los datos se almacenan en localStorage del navegador
+- Para backup: copiar `localStorage.getItem('minimarket_db')`
+- Para restaurar: `localStorage.setItem('minimarket_db', datos_backup)`
+
+## 7. DESARROLLO Y EXTENSIONES
+
+### 7.1 AGREGAR NUEVAS FUNCIONALIDADES
+1. Crear componente en `src/components/`
+2. Agregar ruta en `src/App.jsx`
+3. Actualizar permisos en `AuthContext.jsx` si es necesario
+4. Agregar entrada al menú en `Sidebar.jsx`
+
+### 7.2 MODIFICAR LA BASE DE DATOS
+1. Actualizar `src/data/database.json`
+2. Modificar `useDatabase.js` si es necesario
+3. Actualizar componentes que usen los nuevos datos
+
+### 7.3 ESTILOS Y UI
+- Usar Tailwind CSS para estilos
+- Seguir la paleta de colores definida
+- Mantener consistencia con componentes existentes
+
+## 8. SEGURIDAD
+
+### 8.1 MEDIDAS IMPLEMENTADAS
+- Autenticación requerida para todas las rutas
+- Control de permisos por rol
+- Validación de datos en formularios
+- Sanitización de inputs
+
+### 8.2 RECOMENDACIONES
+- Cambiar contraseñas por defecto
+- Usar HTTPS en producción
+- Implementar rate limiting si se agrega backend real
+- Regular backups de datos
+
+## 9. PERFORMANCE Y OPTIMIZACIÓN
+
+### 9.1 OPTIMIZACIONES IMPLEMENTADAS
+- Lazy loading potencial para rutas
+- Componentes optimizados con React.memo
+- Bundle splitting automático con Vite
+- Imágenes optimizadas
+
+### 9.2 MEJORAS RECOMENDADAS
+- Implementar virtualización para listas grandes
+- Service Workers para offline
+- CDN para assets estáticos
+- Compresión Gzip
+
+## 10. CONTACTO Y SOPORTE
+
+Para soporte técnico:
+- **Repositorio:** https://github.com/NbdyKnows/SIVI_FRONT
+- **Issues:** Crear issue en GitHub
+- **Email:** [contacto del desarrollador]
+
+---
+**FIN DEL MANUAL DEL SISTEMA**

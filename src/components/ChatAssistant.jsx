@@ -1,19 +1,47 @@
-import React, { useState } from 'react';
-import { X, Send, Minimize2, MessageCircle } from 'lucide-react';
-import roblecito from '../assets/roblecito.png';
+import React, { useState, useRef, useEffect } from "react";
+import { X, Send, Minimize2 } from "lucide-react";
+import roblecito from "../assets/roblecito.png";
+import { getChatResponse } from "../services/ChatIA";
 
 const ChatAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
-      id: 1,
-      text: '¡Hola! Soy Roblecito, tu asistente virtual. ¿En qué puedo ayudarte hoy?',
+      id: crypto.randomUUID(),
+      text: "Hola! Soy Roblecito, tu asistente virtual del sistema SIVI. ¿En que puedo ayudarte hoy?",
       isBot: true,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   ]);
+
+  const messagesContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+
+  const isNearBottom = (container) => {
+    if (!container) return true;
+    const threshold = 100;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (shouldAutoScrollRef.current && isNearBottom(container)) {
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, [messages, loading]);
+
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    shouldAutoScrollRef.current = isNearBottom(container);
+  };
 
   const handleToggleChat = () => {
     if (isOpen && isMinimized) {
@@ -24,90 +52,107 @@ const ChatAssistant = () => {
     }
   };
 
-  const handleMinimize = () => {
-    setIsMinimized(true);
-  };
-
+  const handleMinimize = () => setIsMinimized(true);
   const handleClose = () => {
     setIsOpen(false);
     setIsMinimized(false);
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
 
     const newMessage = {
-      id: messages.length + 1,
+      id: crypto.randomUUID(),
       text: message,
       isBot: false,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, newMessage]);
-    setMessage('');
+    setMessages((prev) => [...prev, newMessage]);
+    setMessage("");
+    setLoading(true);
+    shouldAutoScrollRef.current = true;
 
-    // Simular respuesta del bot
-    setTimeout(() => {
+    try {
+      const replyText = await getChatResponse(message);
+
       const botResponse = {
-        id: messages.length + 2,
-        text: 'Gracias por tu mensaje. Estoy aquí para ayudarte con cualquier duda sobre el sistema.',
+        id: crypto.randomUUID(),
+        text: replyText,
         isBot: true,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
+
+      setMessages((prev) => [...prev, botResponse]);
+    } catch (error) {
+      console.error("Error al conectar con el asistente:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          text: "No pude conectarme con Roblecito en este momento. Por favor, intentelo mas tarde.",
+          isBot: true,
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      {/* Chat Button */}
       <div
         className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${
-          isOpen ? 'scale-110' : 'scale-100 hover:scale-105'
+          isOpen ? "scale-110" : "scale-100 hover:scale-105"
         }`}
       >
         <button
           onClick={handleToggleChat}
           className="w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group border-2"
-          style={{ 
-            backgroundColor: '#3F7416',
-            borderColor: '#3F7416DB'
+          style={{
+            backgroundColor: "#3F7416",
+            borderColor: "#3F7416DB",
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-700 opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border-2" style={{ borderColor: '#3F7416DB' }}>
-            <img 
-              src={roblecito} 
-              alt="Roblecito" 
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border-2"
+            style={{ borderColor: "#3F7416DB" }}
+          >
+            <img
+              src={roblecito}
+              alt="Roblecito"
               className="w-full h-full object-cover rounded-full"
             />
           </div>
-          <div className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ backgroundColor: '#3F7416DB' }}></div>
+          <div
+            className="absolute inset-0 rounded-full animate-ping opacity-20"
+            style={{ backgroundColor: "#3F7416DB" }}
+          ></div>
         </button>
       </div>
 
-      {/* Chat Window */}
       {isOpen && (
         <div
           className={`fixed bottom-20 right-4 w-80 bg-white rounded-2xl shadow-2xl z-50 transition-all duration-500 transform ${
-            isMinimized 
-              ? 'scale-95 opacity-0 pointer-events-none' 
-              : 'scale-100 opacity-100 animate-slide-up-chat'
+            isMinimized
+              ? "scale-95 opacity-0 pointer-events-none"
+              : "scale-100 opacity-100 animate-slide-up-chat"
           }`}
-          style={{ height: isMinimized ? '0' : '400px' }}
+          style={{ height: isMinimized ? "0" : "400px" }}
         >
-          {/* Chat Header */}
-          <div 
+          <div
             className="flex items-center justify-between p-4 border-b border-gray-200 rounded-t-2xl"
-            style={{ backgroundColor: '#3F7416' }}
+            style={{ backgroundColor: "#3F7416" }}
           >
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={roblecito} 
-                    alt="Roblecito" 
+                  <img
+                    src={roblecito}
+                    alt="Roblecito"
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>
@@ -134,30 +179,44 @@ const ChatAssistant = () => {
             </div>
           </div>
 
-          {/* Chat Messages */}
-          <div className="flex-1 p-4 overflow-y-auto max-h-64 flex flex-col justify-end">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 p-4 overflow-y-auto max-h-64"
+            style={{
+              scrollBehavior: "smooth",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+            }}
+          >
             <div className="space-y-3">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}
+                  className={`flex ${msg.isBot ? "justify-start" : "justify-end"}`}
                 >
                   <div
                     className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
                       msg.isBot
-                        ? 'bg-gray-100 text-gray-800 rounded-bl-none'
-                        : 'text-white rounded-br-none'
+                        ? "bg-gray-100 text-gray-800 rounded-bl-none"
+                        : "text-white rounded-br-none"
                     }`}
-                    style={!msg.isBot ? { backgroundColor: '#3F7416' } : {}}
+                    style={!msg.isBot ? { backgroundColor: "#3F7416" } : {}}
                   >
                     {msg.text}
                   </div>
                 </div>
               ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 text-gray-500 px-4 py-2 rounded-2xl text-sm italic">
+                    Roblecito esta escribiendo...
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Chat Input */}
           <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
             <div className="flex space-x-2">
               <input
@@ -170,7 +229,7 @@ const ChatAssistant = () => {
               <button
                 type="submit"
                 className="p-2 rounded-full text-white hover:opacity-90 transition-opacity duration-200"
-                style={{ backgroundColor: '#3F7416' }}
+                style={{ backgroundColor: "#3F7416" }}
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -184,27 +243,18 @@ const ChatAssistant = () => {
 
 export default ChatAssistant;
 
-// Estilos CSS adicionales para las animaciones
 const styles = `
-  @keyframes slide-up-chat {
-    from { 
-      opacity: 0; 
-      transform: translateY(20px) scale(0.95); 
-    }
-    to { 
-      opacity: 1; 
-      transform: translateY(0) scale(1); 
-    }
-  }
-  
-  .animate-slide-up-chat {
-    animation: slide-up-chat 0.3s ease-out;
-  }
+@keyframes slide-up-chat {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-slide-up-chat {
+  animation: slide-up-chat 0.3s ease-out;
+}
 `;
 
-// Inyectar estilos en el documento
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
   styleSheet.textContent = styles;
   document.head.appendChild(styleSheet);
 }
