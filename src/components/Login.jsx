@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ModalEstablecerContrasenia, ModalOlvideContrasenia } from './modales';
-import { useDatabase } from '../hooks/useDatabase';
 import loginImage from '../assets/login.png';
 import logo from '../assets/logo.png';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
@@ -10,16 +8,10 @@ import { Eye, EyeOff, Lock, User } from 'lucide-react';
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { updateUsuario } = useDatabase();
   
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Estados para modales
-  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false);
-  const [userRequiringPassword, setUserRequiringPassword] = useState(null);
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   
   const [formData, setFormData] = useState({
     id: '',
@@ -42,17 +34,10 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const result = login(formData);
+      // Login es ahora asíncrono y usa JWT
+      const result = await login(formData);
       
       if (result.success) {
-        // Verificar si el usuario necesita establecer contraseña
-        if (result.requiresPasswordSetup) {
-          setUserRequiringPassword(result.user);
-          setShowPasswordSetupModal(true);
-          setIsLoading(false);
-          return; // No navegar aún
-        }
-        
         // Navegar según el rol del usuario
         const userRole = result.user.role;
         if (userRole === 'cajero') {
@@ -70,47 +55,6 @@ const Login = () => {
       console.error(err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Manejar cuando el usuario establece su contraseña
-  const handleEstablecerContrasenia = async (datosContrasenia) => {
-    try {
-      await updateUsuario(datosContrasenia.usuario, { 
-        contrasenia: datosContrasenia.nuevaContrasenia,
-        reset: false // Ya no necesita establecer contraseña
-      });
-      
-      // Cerrar modal
-      setShowPasswordSetupModal(false);
-      setUserRequiringPassword(null);
-      
-      // Navegar según el rol del usuario
-      const userRole = userRequiringPassword.role;
-      if (userRole === 'cajero') {
-        navigate('/app/ventas');
-      } else if (userRole === 'inventario') {
-        navigate('/app/productos');
-      } else {
-        navigate('/app/ventas'); // admin va a ventas por defecto
-      }
-      
-    } catch (error) {
-      console.error('Error al establecer contraseña:', error);
-      setError('Error al establecer la contraseña. Intente nuevamente.');
-    }
-  };
-
-  // Manejar recuperación de contraseña
-  const handleRecuperarContrasenia = async (usuario) => {
-    try {
-      // Simular verificación y envío de notificación
-      // Aquí podrías integrar con una API real
-      console.log('Solicitud de recuperación enviada para:', usuario);
-      return { success: true };
-    } catch (error) {
-      console.error('Error al solicitar recuperación:', error);
-      return { success: false, message: 'Error del servidor' };
     }
   };
 
@@ -209,24 +153,12 @@ const Login = () => {
 
             {/* Demo Users Info */}
             <div className="text-xs sm:text-sm">
-              <p className="font-semibold mb-1">Usuarios de prueba:</p>
+              <p className="font-semibold mb-1">Usuarios de prueba (Modo LOCAL):</p>
               <div className="space-y-0.5">
-                <p>Admin: USER001 / admin123</p>
-                <p>Cajero: USER002 / cajero123</p>
-                <p>Inventario: USER003 / inventario123</p>
+                <p>Admin: admin / admin123</p>
+                <p>Cajero: vendedor / vendedor123</p>
+                <p>Inventario: inventario / inventario123</p>
               </div>
-            </div>
-
-            {/* Forgot Password Link */}
-            <div className="text-right mt-3 sm:mt-4">
-              <button 
-                type="button"
-                onClick={() => setShowForgotPasswordModal(true)}
-                className="text-xs sm:text-sm hover:text-green-600 transition-colors duration-200 font-medium" 
-                style={{ color: '#633416' }}
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
             </div>
 
             {/* Submit Button */}
@@ -260,24 +192,6 @@ const Login = () => {
           className="max-w-full max-h-full object-contain relative z-10 drop-shadow-lg"
         />
       </div>
-
-      {/* Modal para establecer contraseña */}
-      <ModalEstablecerContrasenia
-        isOpen={showPasswordSetupModal}
-        onClose={() => {
-          setShowPasswordSetupModal(false);
-          setUserRequiringPassword(null);
-        }}
-        onSave={handleEstablecerContrasenia}
-        usuario={userRequiringPassword}
-      />
-
-      {/* Modal para olvidé contraseña */}
-      <ModalOlvideContrasenia
-        isOpen={showForgotPasswordModal}
-        onClose={() => setShowForgotPasswordModal(false)}
-        onRecuperarContrasenia={handleRecuperarContrasenia}
-      />
     </div>
   );
 };

@@ -8,12 +8,14 @@ Sistema web para la gestión integral de un minimarket, desarrollado con React +
 
 1. [Instalación y Configuración](#-instalación-y-configuración)
 2. [Requisitos del Sistema](#-requisitos-del-sistema)
-3. [Estructura del Proyecto](#-estructura-del-proyecto)
-4. [Arquitectura y Funcionamiento](#-arquitectura-y-funcionamiento)
-5. [Base de Datos (JSON)](#-base-de-datos-json)
-6. [Gestión de Estado y Contextos](#-gestión-de-estado-y-contextos)
-7. [Añadir Nuevas Funcionalidades](#-añadir-nuevas-funcionalidades)
-8. [Buenas Prácticas](#-buenas-prácticas)
+3. [Sistema de Autenticación JWT](#-sistema-de-autenticación-jwt)
+4. [Configuración de API](#-configuración-de-api)
+5. [Estructura del Proyecto](#-estructura-del-proyecto)
+6. [Arquitectura y Funcionamiento](#-arquitectura-y-funcionamiento)
+7. [Base de Datos (JSON)](#-base-de-datos-json)
+8. [Gestión de Estado y Contextos](#-gestión-de-estado-y-contextos)
+9. [Añadir Nuevas Funcionalidades](#-añadir-nuevas-funcionalidades)
+10. [Buenas Prácticas](#-buenas-prácticas)
 
 ---
 
@@ -30,6 +32,27 @@ cd SIVI_FRONT
 
 ```bash
 npm install
+```
+
+### Configurar Variables de Entorno
+
+Copiar el archivo de ejemplo y configurar las URLs:
+
+```bash
+cp .env.example .env
+```
+
+Editar `.env` con tus configuraciones:
+
+```env
+# URL del backend en desarrollo (local)
+VITE_API_BASE_URL_DEV=http://localhost:3000
+
+# URL del backend en producción
+VITE_API_BASE_URL_PROD=https://api.minimarket-losrobles.com
+
+# API Key de Groq (para el chat assistant)
+VITE_GROQ_API_KEY=tu_clave_aqui
 ```
 
 ### Ejecutar el Proyecto en Desarrollo
@@ -86,6 +109,150 @@ Si necesitas instalar o actualizar Node.js, visita: https://nodejs.org/
 
 ---
 
+## 🔐 Sistema de Autenticación JWT
+
+### Modos de Operación
+
+El sistema soporta **3 modos de desarrollo**:
+
+| Modo | Descripción | Backend | Uso |
+|------|-------------|---------|-----|
+| **LOCAL** | Sin backend, usa JSON local | ❌ No | Desarrollo frontend puro |
+| **DEVELOPMENT** | Backend local | ✅ http://localhost:8083 | Desarrollo full-stack |
+| **PRODUCTION** | Backend desplegado | ✅ Servidor producción | Aplicación en vivo |
+
+### Configuración del Modo
+
+Editar `src/services/authService.js`:
+
+```javascript
+// Línea 21
+const AUTH_MODE = 'LOCAL'; // Cambiar a 'DEVELOPMENT' o 'PRODUCTION'
+```
+
+### Usuarios de Prueba (Modo LOCAL)
+
+```javascript
+// Admin - Acceso total
+Usuario: admin
+Contraseña: admin123
+
+// Cajero - Ventas y caja
+Usuario: vendedor
+Contraseña: vendedor123
+
+// Inventario - Productos e inventario
+Usuario: inventario
+Contraseña: inventario123
+```
+
+### Uso en Componentes
+
+```jsx
+import { useAuth } from '../contexts/AuthContext';
+
+const MyComponent = () => {
+  const { user, login, logout, hasPermission } = useAuth();
+
+  // Login
+  const handleLogin = async () => {
+    const result = await login({
+      id: 'admin',
+      password: 'admin123'
+    });
+    
+    if (result.success) {
+      console.log('Usuario:', result.user);
+    }
+  };
+
+  // Verificar permisos
+  if (hasPermission('ventas')) {
+    // Mostrar módulo de ventas
+  }
+
+  // Logout
+  const handleLogout = () => logout();
+};
+```
+
+### Estructura del Token JWT
+
+```javascript
+{
+  sub: "admin",           // Username
+  idUsuario: 1,           // ID del usuario
+  nombre: "Juan Pérez",   // Nombre completo
+  rol: "ADMIN",           // ADMIN, CAJA, ALMACEN
+  idRol: 1,               // ID del rol
+  habilitado: true,       // Estado activo
+  iss: "SIVI",            // Emisor
+  iat: 1640000000,        // Timestamp emisión
+  exp: 1640086400         // Timestamp expiración (24h)
+}
+```
+
+### Documentación Completa
+
+Para más detalles, ver: `src/services/README_AUTH.md`
+
+---
+
+## 🌐 Configuración de API
+
+### Módulo de Configuración
+
+El sistema incluye un módulo completo para gestionar URLs de API y endpoints:
+
+**Ubicación**: `src/config/api.js`
+
+### Configuración por Entorno
+
+El sistema detecta automáticamente el entorno (desarrollo/producción):
+
+- **Desarrollo** (`npm run dev`):
+  - Usa `VITE_API_BASE_URL_DEV`
+  - Por defecto: `http://localhost:3000`
+  - Timeout: 10 segundos
+
+- **Producción** (`npm run build`):
+  - Usa `VITE_API_BASE_URL_PROD`
+  - Por defecto: `https://api.minimarket-losrobles.com`
+  - Timeout: 15 segundos
+
+### Uso Básico
+
+```javascript
+// Importar servicios
+import { productosService } from '../services';
+
+// Usar servicios para operaciones CRUD
+const productos = await productosService.getAll();
+const producto = await productosService.getById('PROD001');
+await productosService.create(nuevoProducto);
+await productosService.update('PROD001', datosActualizados);
+await productosService.delete('PROD001');
+```
+
+### Endpoints Disponibles
+
+Todos los endpoints están organizados por módulo en `API_ENDPOINTS`:
+
+- `auth.*` - Autenticación
+- `productos.*` - Gestión de productos
+- `ventas.*` - Gestión de ventas
+- `inventario.*` - Control de inventario
+- `usuarios.*` - Administración de usuarios
+- `proveedores.*` - Gestión de proveedores
+- `clientes.*` - Gestión de clientes
+- `descuentos.*` - Administración de descuentos
+- `cajaChica.*` - Movimientos de caja chica
+- `reportes.*` - Generación de reportes
+
+Ver documentación completa en: `src/config/README.md`
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
@@ -97,6 +264,10 @@ SIVI/
 │   │   ├── login.png
 │   │   ├── logo.png
 │   │   └── roblecito.png
+│   │
+│   ├── config/               # ⭐ Configuración de API y constantes
+│   │   ├── api.js           # URLs base y endpoints de la API
+│   │   └── README.md        # Documentación del módulo de configuración
 │   │
 │   ├── components/           # Componentes reutilizables
 │   │   ├── modales/         # Modales del sistema
@@ -129,6 +300,12 @@ SIVI/
 │   ├── hooks/                # Custom Hooks
 │   │   └── useDatabase.js    # Hook para operaciones CRUD con database.json
 │   │
+│   ├── services/             # ⭐ Servicios y lógica de negocio
+│   │   ├── httpClient.js    # Cliente HTTP con manejo de errores
+│   │   ├── productosService.js # Ejemplo de servicio para productos
+│   │   ├── ChatIA.js        # Servicio de chat con IA
+│   │   └── index.js         # Exportación centralizada de servicios
+│   │
 │   ├── pages/                # Páginas principales del sistema
 │   │   ├── AgregarStock.jsx
 │   │   ├── CajaChica.jsx
@@ -152,9 +329,21 @@ SIVI/
 ├── postcss.config.js         # Configuración de PostCSS
 ├── tailwind.config.js        # Configuración de Tailwind CSS
 ├── vite.config.js            # Configuración de Vite
+├── .env                      # ⭐ Variables de entorno (NO subir a Git)
+├── .env.example              # ⭐ Plantilla de variables de entorno
 ├── package.json              # Dependencias y scripts
 └── README.md                 # Este archivo
 ```
+
+### ⭐ Archivos Nuevos (Configuración API)
+
+Los archivos marcados con ⭐ son parte del nuevo módulo de configuración de API:
+
+- **`src/config/api.js`**: Centraliza todas las URLs y endpoints
+- **`src/services/httpClient.js`**: Cliente HTTP reutilizable con timeout y manejo de errores
+- **`src/services/productosService.js`**: Ejemplo de servicio completo
+- **`.env`**: Variables de entorno (desarrollo y producción)
+- **`.env.example`**: Plantilla para configurar tu propio `.env`
 
 ---
 
