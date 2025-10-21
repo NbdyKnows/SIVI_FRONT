@@ -198,58 +198,144 @@ Para más detalles, ver: `src/services/README_AUTH.md`
 
 ---
 
-## 🌐 Configuración de API
+## 🌐 Configuración de API y Endpoints
 
-### Módulo de Configuración
+### 📌 Cambiar Modo de Operación (LOCAL, DEVELOPMENT, PRODUCTION)
 
-El sistema incluye un módulo completo para gestionar URLs de API y endpoints:
-
-**Ubicación**: `src/config/api.js`
-
-### Configuración por Entorno
-
-El sistema detecta automáticamente el entorno (desarrollo/producción):
-
-- **Desarrollo** (`npm run dev`):
-  - Usa `VITE_API_BASE_URL_DEV`
-  - Por defecto: `http://localhost:3000`
-  - Timeout: 10 segundos
-
-- **Producción** (`npm run build`):
-  - Usa `VITE_API_BASE_URL_PROD`
-  - Por defecto: `https://api.minimarket-losrobles.com`
-  - Timeout: 15 segundos
-
-### Uso Básico
+**Solo edita 1 archivo**: `src/config/appConfig.js`
 
 ```javascript
-// Importar servicios
-import { productosService } from '../services';
-
-// Usar servicios para operaciones CRUD
-const productos = await productosService.getAll();
-const producto = await productosService.getById('PROD001');
-await productosService.create(nuevoProducto);
-await productosService.update('PROD001', datosActualizados);
-await productosService.delete('PROD001');
+// Línea 13 - ÚNICO LUGAR para cambiar el modo
+export const APP_MODE = 'DEVELOPMENT'; // Cambiar a 'LOCAL' o 'PRODUCTION'
 ```
 
-### Endpoints Disponibles
+Ver: `CAMBIAR_MODO.md` para más detalles.
 
-Todos los endpoints están organizados por módulo en `API_ENDPOINTS`:
+---
 
-- `auth.*` - Autenticación
-- `productos.*` - Gestión de productos
-- `ventas.*` - Gestión de ventas
-- `inventario.*` - Control de inventario
-- `usuarios.*` - Administración de usuarios
-- `proveedores.*` - Gestión de proveedores
-- `clientes.*` - Gestión de clientes
-- `descuentos.*` - Administración de descuentos
-- `cajaChica.*` - Movimientos de caja chica
-- `reportes.*` - Generación de reportes
+### 🚀 Cómo Agregar y Usar Endpoints
 
-Ver documentación completa en: `src/config/README.md`
+#### **Paso 1: Crear el archivo de endpoints**
+
+Crear `src/config/endpoints/productosEndpoints.js`:
+
+```javascript
+import { API_BASE_URL } from '../appConfig';
+
+export const productosEndpoints = {
+  base: `${API_BASE_URL}/api/productos`,
+  getAll: `${API_BASE_URL}/api/productos`,
+  getById: (id) => `${API_BASE_URL}/api/productos/${id}`,
+  create: `${API_BASE_URL}/api/productos`,
+  update: (id) => `${API_BASE_URL}/api/productos/${id}`,
+  delete: (id) => `${API_BASE_URL}/api/productos/${id}`,
+  search: `${API_BASE_URL}/api/productos/search`,
+};
+```
+
+#### **Paso 2: Exportar en `api.js`**
+
+Editar `src/config/api.js`:
+
+```javascript
+// Agregar exportación
+export { productosEndpoints } from './endpoints/productosEndpoints';
+
+// Agregar al objeto API_ENDPOINTS
+import { productosEndpoints } from './endpoints/productosEndpoints';
+
+export const API_ENDPOINTS = {
+  // ... otros endpoints
+  productos: productosEndpoints,
+};
+```
+
+#### **Paso 3: Crear el servicio (opcional pero recomendado)**
+
+Crear `src/services/productosService.js`:
+
+```javascript
+import httpClient from './httpClient';
+import { productosEndpoints } from '../config/api';
+
+const productosService = {
+  async getAll() {
+    return await httpClient.get(productosEndpoints.getAll);
+  },
+  
+  async getById(id) {
+    return await httpClient.get(productosEndpoints.getById(id));
+  },
+  
+  async create(producto) {
+    return await httpClient.post(productosEndpoints.create, producto);
+  },
+  
+  async update(id, producto) {
+    return await httpClient.put(productosEndpoints.update(id), producto);
+  },
+  
+  async delete(id) {
+    return await httpClient.delete(productosEndpoints.delete(id));
+  }
+};
+
+export default productosService;
+```
+
+#### **Paso 4: Usar en componentes**
+
+```javascript
+import { productosService } from '../services';
+
+// En tu componente
+const MiComponente = () => {
+  const [productos, setProductos] = useState([]);
+  
+  useEffect(() => {
+    const cargarProductos = async () => {
+      try {
+        const data = await productosService.getAll();
+        setProductos(data);
+      } catch (error) {
+        console.error('Error:', error.message);
+      }
+    };
+    
+    cargarProductos();
+  }, []);
+  
+  const crearProducto = async (nuevoProducto) => {
+    try {
+      await productosService.create(nuevoProducto);
+      // Recargar lista
+      const data = await productosService.getAll();
+      setProductos(data);
+    } catch (error) {
+      alert('Error al crear producto');
+    }
+  };
+  
+  return (/* Tu JSX */);
+};
+```
+
+---
+
+### ✨ Ventajas del Sistema
+
+✅ **Token automático**: `httpClient` agrega el token JWT automáticamente en cada petición  
+✅ **Manejo de errores**: Errores capturados y formateados automáticamente  
+✅ **Timeouts**: Ajustados según el modo (LOCAL/DEV/PROD)  
+✅ **Sin configuración extra**: Solo cambias `APP_MODE` en un lugar  
+
+---
+
+### 📚 Documentación Completa
+
+- **Configuración completa**: `src/config/README.md`
+- **Cambiar modos**: `CAMBIAR_MODO.md`
+- **Arquitectura**: `ARQUITECTURA_CONFIGURACION.txt`
 
 ---
 

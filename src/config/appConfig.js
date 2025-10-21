@@ -88,10 +88,10 @@ export const buildURL = (endpoint, params = {}) => {
  */
 if (APP_MODE === 'DEVELOPMENT') {
   console.log('🌐 Configuración de la Aplicación:', {
-    '🔧 Modo': APP_MODE,
-    '🌍 URL Base': API_BASE_URL || 'N/A (modo LOCAL)',
-    '⏱️ Timeout': `${API_TIMEOUT}ms`,
-    '🔐 Auth Backend': AUTH_CONFIG.useBackendAuth ? 'SÍ' : 'NO (localStorage)',
+    'Modo': APP_MODE,
+    'URL Base': API_BASE_URL || 'N/A (modo LOCAL)',
+    'Timeout': `${API_TIMEOUT}ms`,
+    'Auth Backend': AUTH_CONFIG.useBackendAuth ? 'SÍ' : 'NO (localStorage)',
   });
 }
 
@@ -100,14 +100,14 @@ if (APP_MODE === 'DEVELOPMENT') {
  */
 if (!['LOCAL', 'DEVELOPMENT', 'PRODUCTION'].includes(APP_MODE)) {
   throw new Error(
-    `❌ APP_MODE inválido: "${APP_MODE}". ` +
+    `APP_MODE inválido: "${APP_MODE}". ` +
     `Valores permitidos: 'LOCAL', 'DEVELOPMENT', 'PRODUCTION'`
   );
 }
 
 if (APP_MODE !== 'LOCAL' && !API_BASE_URL) {
   console.error(
-    `⚠️ ADVERTENCIA: APP_MODE es "${APP_MODE}" pero no hay URL configurada. ` +
+    `ADVERTENCIA: APP_MODE es "${APP_MODE}" pero no hay URL configurada. ` +
     `Asegúrate de configurar VITE_API_BASE_URL_PROD en tu archivo .env`
   );
 }
