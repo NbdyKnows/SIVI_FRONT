@@ -153,7 +153,6 @@ const Login = () => {
 
             {/* Demo Users Info */}
             <div className="text-xs sm:text-sm">
-              <p className="font-semibold mb-1">Usuarios de prueba (Modo LOCAL):</p>
               <div className="space-y-0.5">
                 <p>Admin: admin / admin123</p>
                 <p>Cajero: vendedor / vendedor123</p>

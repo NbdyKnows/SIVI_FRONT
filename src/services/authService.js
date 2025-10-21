@@ -34,15 +34,26 @@ class AuthService {
    * Login con base de datos local (JSON)
    */
   async loginLocal(username, password) {
-    // Obtener usuarios del localStorage
-    const dbString = localStorage.getItem('minimarket_db');
+    // Obtener usuarios del localStorage o inicializar desde database.json
+    let dbString = localStorage.getItem('minimarket_db');
+    
+    // Si no existe, cargar la base de datos inicial desde el JSON importado
     if (!dbString) {
-      throw new Error('Base de datos no inicializada');
+      try {
+        const databaseModule = await import('../data/database.json');
+        const databaseData = databaseModule.default;
+        localStorage.setItem('minimarket_db', JSON.stringify(databaseData));
+        dbString = JSON.stringify(databaseData);
+      } catch {
+        throw new Error('No se pudo cargar la base de datos local');
+      }
     }
     
     const db = JSON.parse(dbString);
-    const user = db.usuarios?.find(
-      (u) => u.username === username && u.password === password && u.active
+    
+    // Buscar usuario en la estructura correcta (db.usuario, no db.usuarios)
+    const user = db.usuario?.find(
+      (u) => u.usuario === username && u.contrasenia === password && u.habilitado
     );
     
     if (!user) {
@@ -51,12 +62,12 @@ class AuthService {
     
     // Crear un token falso para modo local (solo para mantener consistencia)
     const fakePayload = {
-      sub: user.username,
-      idUsuario: parseInt(user.id.replace('USER', '')),
-      nombre: user.name,
-      rol: this.mapRoleToBackend(user.role),
-      idRol: this.getRoleId(user.role),
-      habilitado: user.active,
+      sub: user.usuario,
+      idUsuario: user.id_usuario,
+      nombre: user.nombre,
+      rol: this.mapRoleIdToString(user.id_rol),
+      idRol: user.id_rol,
+      habilitado: user.habilitado,
       iss: 'SIVI',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 86400, // 24 horas
@@ -89,8 +100,24 @@ class AuthService {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al iniciar sesión');
+        // Intentar parsear el error del backend
+        let errorMessage = 'Error al iniciar sesión';
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // Si no es JSON válido, usar mensaje por código de estado
+          if (response.status === 401 || response.status === 403) {
+            errorMessage = 'Usuario o contraseña incorrectos';
+          } else if (response.status === 404) {
+            errorMessage = 'Servicio no disponible';
+          } else if (response.status >= 500) {
+            errorMessage = 'Error en el servidor';
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const data = await response.json();
@@ -105,7 +132,14 @@ class AuthService {
       
     } catch (error) {
       console.error('Error en login:', error);
-      throw new Error(error.message || 'Error de conexión con el servidor');
+      
+      // Si es un error de red
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('No se puede conectar con el servidor. Verifica tu conexión.');
+      }
+      
+      // Re-lanzar el error con el mensaje apropiado
+      throw error;
     }
   }
   
@@ -259,6 +293,19 @@ class AuthService {
    */
   getAuthMode() {
     return AUTH_CONFIG.mode;
+  }
+  
+  /**
+   * Mapear ID de rol a string
+   */
+  mapRoleIdToString(roleId) {
+    const roleMap = {
+      1: 'ADMIN',
+      2: 'CAJA',
+      3: 'ALMACEN',
+    };
+    
+    return roleMap[roleId] || 'CAJA';
   }
   
   /**
