@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Send, Minimize2 } from "lucide-react";
 import roblecito from "../assets/roblecito.png";
 import { getChatResponse } from "../services/ChatIA";
+import { useAuth } from "../contexts/AuthContext";
 
 const ChatAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,30 +20,27 @@ const ChatAssistant = () => {
 
   const messagesContainerRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
+  const { isAuthenticated } = useAuth();
 
   const isNearBottom = (container) => {
     if (!container) return true;
     const threshold = 100;
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   };
-
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-
     if (shouldAutoScrollRef.current && isNearBottom(container)) {
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
       });
     }
   }, [messages, loading]);
-
   const handleScroll = () => {
     const container = messagesContainerRef.current;
     if (!container) return;
     shouldAutoScrollRef.current = isNearBottom(container);
   };
-
   const handleToggleChat = () => {
     if (isOpen && isMinimized) {
       setIsMinimized(false);
@@ -51,7 +49,6 @@ const ChatAssistant = () => {
       setIsMinimized(false);
     }
   };
-
   const handleMinimize = () => setIsMinimized(true);
   const handleClose = () => {
     setIsOpen(false);
@@ -61,6 +58,20 @@ const ChatAssistant = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
+
+    if (!isAuthenticated) {
+      console.error("ChatAssistant: Usuario no autenticado.");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          text: "Tu sesión ha expirado. Por favor, refresca la página e inicia sesión para usar el chat.",
+          isBot: true,
+          timestamp: new Date(),
+        },
+      ]);
+      return; 
+    }
 
     const newMessage = {
       id: crypto.randomUUID(),
@@ -75,6 +86,7 @@ const ChatAssistant = () => {
     shouldAutoScrollRef.current = true;
 
     try {
+
       const replyText = await getChatResponse(message);
 
       const botResponse = {
@@ -182,8 +194,9 @@ const ChatAssistant = () => {
           <div
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="flex-1 p-4 overflow-y-auto max-h-64"
+            className="flex-1 p-4 overflow-y-auto"
             style={{
+              height: "calc(100% - 130px)",
               scrollBehavior: "smooth",
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
@@ -217,7 +230,7 @@ const ChatAssistant = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
+          <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 absolute bottom-0 w-full bg-white rounded-b-2xl">
             <div className="flex space-x-2">
               <input
                 type="text"

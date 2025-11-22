@@ -7,17 +7,14 @@
  * - 'PRODUCTION': Backend en producción desplegado
  */
 
-// ===================================
-// CAMBIA ESTE VALOR PARA CAMBIAR TODO
-// ===================================
-export const APP_MODE = 'LOCAL'; // 'LOCAL' | 'DEVELOPMENT' | 'PRODUCTION'
+export const APP_MODE = 'DEVELOPMENT'; // 'LOCAL' | 'DEVELOPMENT' | 'PRODUCTION'
 
 /**
  * URLs de la API según el modo
  */
 const API_URLS = {
   LOCAL: null, // localStorage
-  DEVELOPMENT: 'http://localhost:8083/api',
+  DEVELOPMENT: 'http://localhost:8084/api',
   PRODUCTION: import.meta.env.VITE_API_BASE_URL_PROD || 'https://api.minimarket-losrobles.com/api',
 };
 

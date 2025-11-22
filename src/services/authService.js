@@ -2,14 +2,14 @@ import { jwtDecode } from 'jwt-decode';
 import { AUTH_CONFIG } from '../config/appConfig';
 
 /**
- * ⚠️ CONFIGURACIÓN CENTRALIZADA ⚠️
- * 
- * Este servicio ahora usa la configuración global de src/config/appConfig.js
- * 
- * Para cambiar el modo (LOCAL, DEVELOPMENT, PRODUCTION):
- * 👉 Edita la constante APP_MODE en: src/config/appConfig.js
- * 
- * Ya NO necesitas cambiar nada en este archivo.
+ *CONFIGURACIÓN CENTRALIZADA
+ *
+ *Este servicio ahora usa la configuración global de src/config/appConfig.js
+ *
+ *Para cambiar el modo (LOCAL, DEVELOPMENT, PRODUCTION):
+ *Edita la constante APP_MODE en: src/config/appConfig.js
+ *
+ *Ya NO necesitas cambiar nada en este archivo.
  */
 
 /**
