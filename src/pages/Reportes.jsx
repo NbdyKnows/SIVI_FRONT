@@ -1,25 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText, Download, Calendar, BarChart3 } from 'lucide-react';
+import ModalReporteVentas from '../components/modales/ModalReporteVentas';
+import ModalReporteInventario from '../components/modales/ModalReporteInventario';
+import ModalReporteFinanciero from '../components/modales/ModalReporteFinanciero';
+import {
+  generarReporteDeVentas,
+  generarReporteInventario,
+  generarReporteFinanciero
+} from '../services/reportesService';
 
 const Reportes = () => {
+  const [modalActivo, setModalActivo] = useState(null);
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroFecha, setFiltroFecha] = useState('');
+
+  const cerrarModal = () => setModalActivo(null);
+  const handleGenerateVentas = async (opciones) => {
+    console.log('Solicitando reporte de ventas al backend...', opciones);
+    try {
+      await generarReporteDeVentas(opciones);
+      cerrarModal();
+    } catch (error) {
+      console.error("Error en vista ventas:", error);
+    }
+  };
+  const handleGenerateInventario = async (opciones) => {
+    console.log('Solicitando reporte de inventario al backend...', opciones);
+    try {
+      await generarReporteInventario(opciones);
+      cerrarModal();
+    } catch (error) {
+      console.error("Error en vista inventario:", error);
+    }
+  };
+  const handleGenerateFinanciero = async (opciones) => {
+    console.log('Solicitando reporte financiero...', opciones);
+    try {
+      await generarReporteFinanciero(opciones);
+      cerrarModal();
+    } catch (error) {
+      console.error("Error en vista financiero:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold" style={{ color: '#3F7416' }}>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-primary-green">
           Reportes
         </h1>
-        <button
-          className="px-6 py-2 text-white rounded-lg hover:opacity-90 transition-opacity duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-          style={{ backgroundColor: '#3F7416' }}
-        >
-          Generar Reporte
-        </button>
+        <p className="text-gray-600 mt-2">
+          Genera y administra reportes detallados de tu negocio
+        </p>
       </div>
-
-      {/* Report Categories */}
+      {/* Categorías de Reportes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+        {/* Tarjeta Ventas */}
+        <div
+          onClick={() => setModalActivo('ventas')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-100 rounded-full">
               <BarChart3 className="w-6 h-6 text-blue-600" />
@@ -39,11 +80,14 @@ const Reportes = () => {
             </div>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+        {/* Tarjeta Inventario */}
+        <div
+          onClick={() => setModalActivo('inventario')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-100 rounded-full">
-              <FileText className="w-6 h-6" style={{ color: '#3F7416' }} />
+              <FileText className="w-6 h-6 text-primary-green" />
             </div>
             <Download className="w-5 h-5 text-gray-400 hover:text-gray-600" />
           </div>
@@ -60,8 +104,11 @@ const Reportes = () => {
             </div>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer">
+        {/* Tarjeta Financiero */}
+        <div
+          onClick={() => setModalActivo('financiero')}
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-100 rounded-full">
               <Calendar className="w-6 h-6 text-purple-600" />
@@ -82,24 +129,29 @@ const Reportes = () => {
           </div>
         </div>
       </div>
-
-      {/* Recent Reports */}
+      {/* Tabla de Reportes Recientes */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold" style={{ color: '#3F7416' }}>
+            <h2 className="text-xl font-semibold text-primary-green">
               Reportes Recientes
             </h2>
             <div className="flex space-x-3">
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                <option>Todos los tipos</option>
-                <option>Ventas</option>
-                <option>Inventario</option>
-                <option>Financieros</option>
+              <select
+                value={filtroTipo}
+                onChange={(e) => setFiltroTipo(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-states-focus focus:border-states-focus"
+              >
+                <option value="todos">Todos los tipos</option>
+                <option value="ventas">Ventas</option>
+                <option value="inventario">Inventario</option>
+                <option value="financieros">Financieros</option>
               </select>
               <input
                 type="date"
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-states-focus focus:border-states-focus"
               />
             </div>
           </div>
@@ -170,6 +222,31 @@ const Reportes = () => {
           </table>
         </div>
       </div>
+      {/* Modal de Ventas */}
+      {modalActivo === 'ventas' && (
+        <ModalReporteVentas
+          isOpen={true}
+          onClose={cerrarModal}
+          onGenerate={handleGenerateVentas}
+        />
+      )}
+      {/* Modal de Inventario */}
+      {modalActivo === 'inventario' && (
+        <ModalReporteInventario
+          isOpen={true}
+          onClose={cerrarModal}
+          onGenerate={handleGenerateInventario}
+        />
+      )}
+      {/* Modal de Financiero */}
+      {modalActivo === 'financiero' && (
+        <ModalReporteFinanciero
+          isOpen={true}
+          onClose={cerrarModal}
+          onGenerate={handleGenerateFinanciero}
+        />
+      )}
+
     </div>
   );
 };
