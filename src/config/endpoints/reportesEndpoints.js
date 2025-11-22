@@ -1,14 +1,10 @@
-/**
- * Endpoints de Reportes
- */
-
 import { API_BASE_URL } from '../apiConfig';
 
 export const reportesEndpoints = {
-  base: `${API_BASE_URL}/api/reportes`,
-  ventas: `${API_BASE_URL}/api/reportes/ventas`,
-  inventario: `${API_BASE_URL}/api/reportes/inventario`,
-  financiero: `${API_BASE_URL}/api/reportes/financiero`,
-  productos: `${API_BASE_URL}/api/reportes/productos`,
-  general: `${API_BASE_URL}/api/reportes/general`,
+  ventasPorProducto: `${API_BASE_URL}/reportes/ventas-producto/reporte`,
+  ventasPorComprobante: `${API_BASE_URL}/reportes/ventas-comprobante/reporte`,
+  inventario: `${API_BASE_URL}/reportes/inventario/reporte`,
+  financiero: `${API_BASE_URL}/reportes/financiero/reporte`,
+  productos: `${API_BASE_URL}/reportes/productos`,
+  general: `${API_BASE_URL}/reportes/general`,
 };
