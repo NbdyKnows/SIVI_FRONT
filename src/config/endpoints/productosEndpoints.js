@@ -2,15 +2,17 @@
  * Endpoints de Productos
  */
 
-import { API_BASE_URL } from '../apiConfig';
+import { API_BASE_URL } from '../appConfig';
 
 export const productosEndpoints = {
-  base: `${API_BASE_URL}/api/productos`,
-  getAll: `${API_BASE_URL}/api/productos`,
-  getById: (id) => `${API_BASE_URL}/api/productos/${id}`,
-  create: `${API_BASE_URL}/api/productos`,
-  update: (id) => `${API_BASE_URL}/api/productos/${id}`,
-  delete: (id) => `${API_BASE_URL}/api/productos/${id}`,
-  search: `${API_BASE_URL}/api/productos/search`,
-  byCategory: (categoria) => `${API_BASE_URL}/api/productos/categoria/${categoria}`,
+  base: `${API_BASE_URL}/almacen/productos`,
+  getAll: `${API_BASE_URL}/almacen/productos`,
+  getById: (id) => `${API_BASE_URL}/almacen/productos/${id}`,
+  create: (id) => `${API_BASE_URL}/almacen/productos/${id}`,
+  update: (id) => `${API_BASE_URL}/almacen/productos/${id}`,
+  delete: (id) => `${API_BASE_URL}/almacen/productos/${id}`,
+  disable: (id) => `${API_BASE_URL}/almacen/productos/${id}/disable`,
+  enable: (id) => `${API_BASE_URL}/almacen/productos/${id}/enable`,
+  search: `${API_BASE_URL}/almacen/productos/search`,
+  byCategory: (categoria) => `${API_BASE_URL}/almacen/productos/categoria/${categoria}`,
 };

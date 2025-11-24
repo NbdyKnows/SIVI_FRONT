@@ -1,23 +1,10 @@
-/**
- * Servicio de Productos - Ejemplo de uso
- * 
- * Este archivo muestra cómo usar httpClient y API_ENDPOINTS
- * para crear un servicio completo de productos.
- * 
- * Puedes crear servicios similares para: ventas, usuarios, inventario, etc.
- */
-
 import httpClient from './httpClient';
-import { API_ENDPOINTS } from '../config/api';
+import { productosEndpoints } from '../config/api';
 
 const productosService = {
-  /**
-   * Obtener todos los productos
-   * @returns {Promise<Array>} Lista de productos
-   */
   async getAll() {
     try {
-      const productos = await httpClient.get(API_ENDPOINTS.productos.getAll);
+      const productos = await httpClient.get(productosEndpoints.getAll);
       return productos;
     } catch (error) {
       console.error('Error al obtener productos:', error);
@@ -25,14 +12,9 @@ const productosService = {
     }
   },
 
-  /**
-   * Obtener un producto por ID
-   * @param {string} id - ID del producto
-   * @returns {Promise<Object>} Producto encontrado
-   */
   async getById(id) {
     try {
-      const producto = await httpClient.get(API_ENDPOINTS.productos.getById(id));
+      const producto = await httpClient.get(productosEndpoints.getById(id));
       return producto;
     } catch (error) {
       console.error(`Error al obtener producto ${id}:`, error);
@@ -40,15 +22,10 @@ const productosService = {
     }
   },
 
-  /**
-   * Crear un nuevo producto
-   * @param {Object} producto - Datos del producto
-   * @returns {Promise<Object>} Producto creado
-   */
-  async create(producto) {
+  async create(id, producto) {
     try {
       const nuevoProducto = await httpClient.post(
-        API_ENDPOINTS.productos.create,
+        productosEndpoints.create(id),
         producto
       );
       return nuevoProducto;
@@ -60,14 +37,12 @@ const productosService = {
 
   /**
    * Actualizar un producto
-   * @param {string} id - ID del producto
-   * @param {Object} producto - Datos actualizados
-   * @returns {Promise<Object>} Producto actualizado
+   * PUT /almacen/productos/:id
    */
   async update(id, producto) {
     try {
       const productoActualizado = await httpClient.put(
-        API_ENDPOINTS.productos.update(id),
+        productosEndpoints.update(id),
         producto
       );
       return productoActualizado;
@@ -78,13 +53,12 @@ const productosService = {
   },
 
   /**
-   * Eliminar un producto
-   * @param {string} id - ID del producto
-   * @returns {Promise<Object>} Confirmación de eliminación
+   * Eliminar un producto (físicamente)
+   * DELETE /almacen/productos/:id
    */
   async delete(id) {
     try {
-      const resultado = await httpClient.delete(API_ENDPOINTS.productos.delete(id));
+      const resultado = await httpClient.delete(productosEndpoints.delete(id));
       return resultado;
     } catch (error) {
       console.error(`Error al eliminar producto ${id}:`, error);
@@ -93,14 +67,41 @@ const productosService = {
   },
 
   /**
+   * Deshabilitar un producto
+   * PATCH /almacen/productos/:id/disable
+   */
+  async disable(id) {
+    try {
+      const resultado = await httpClient.patch(productosEndpoints.disable(id));
+      return resultado;
+    } catch (error) {
+      console.error(`Error al deshabilitar producto ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Habilitar un producto
+   * PATCH /almacen/productos/:id/enable
+   */
+  async enable(id) {
+    try {
+      const resultado = await httpClient.patch(productosEndpoints.enable(id));
+      return resultado;
+    } catch (error) {
+      console.error(`Error al habilitar producto ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Buscar productos
-   * @param {string} query - Término de búsqueda
-   * @returns {Promise<Array>} Productos encontrados
+   * GET /almacen/productos/search?q=...
    */
   async search(query) {
     try {
       const productos = await httpClient.get(
-        `${API_ENDPOINTS.productos.search}?q=${encodeURIComponent(query)}`
+        `${productosEndpoints.search}?q=${encodeURIComponent(query)}`
       );
       return productos;
     } catch (error) {
@@ -111,13 +112,12 @@ const productosService = {
 
   /**
    * Obtener productos por categoría
-   * @param {string} categoria - Nombre de la categoría
-   * @returns {Promise<Array>} Productos de la categoría
+   * GET /almacen/productos/categoria/:categoria
    */
   async getByCategory(categoria) {
     try {
       const productos = await httpClient.get(
-        API_ENDPOINTS.productos.byCategory(categoria)
+        productosEndpoints.byCategory(categoria)
       );
       return productos;
     } catch (error) {

@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Shield, UserCheck, Edit, Trash2, Key, RotateCcw } from 'lucide-react';
-import { useDatabase } from '../hooks/useDatabase';
+import { usuariosService } from '../services';
 import { ModalCrearUsuario, ModalEditarUsuario, ModalEstablecerContrasenia, ModalOlvideContrasenia } from '../components/modales';
+import Toast from '../components/Toast';
 
 const Usuarios = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('todos');
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   // Estados para modales
   const [modalCrearUsuario, setModalCrearUsuario] = useState(false);
@@ -14,63 +18,93 @@ const Usuarios = () => {
   const [modalOlvideContrasenia, setModalOlvideContrasenia] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   
-  const { getUsuariosWithRol, createUsuario, updateUsuario, data } = useDatabase();
+  // Estado para notificaciones toast
+  const [toast, setToast] = useState(null);
 
-  // Obtener usuarios con datos de rol usando la función del hook
-  const usuariosConRol = getUsuariosWithRol().map(usuario => ({
-    ...usuario,
-    codigo: `USER${String(usuario.id_usuario).padStart(3, '0')}`
-  }));
+  // Función para mostrar notificación toast
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  // Cargar usuarios al montar el componente
+  useEffect(() => {
+    cargarUsuarios();
+  }, []);
+
+  const cargarUsuarios = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const data = await usuariosService.getAll();
+      // Normalizar datos del backend
+      const usuariosNormalizados = data.map(usuario => ({
+        ...usuario,
+        // Asegurar que siempre usemos id_usuario
+        id_usuario: usuario.id_usuario || usuario.idUsuario,
+        id_rol: usuario.id_rol || usuario.idRol,
+      }));
+      setUsuarios(usuariosNormalizados);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error al cargar usuarios:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filtrar usuarios
-  const usuariosFiltrados = usuariosConRol.filter(usuario => {
-    const matchesSearch = usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         usuario.usuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         usuario.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+  const usuariosFiltrados = usuarios.filter(usuario => {
+    const matchesSearch = usuario.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         usuario.usuario?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = roleFilter === 'todos' || usuario.rol_descripcion === roleFilter;
+    // Mapear id_rol a descripción de rol para el filtro
+    const rolDescripcion = usuario.id_rol === 1 ? 'admin' : 
+                          usuario.id_rol === 2 ? 'cajero' : 
+                          'inventario';
+    const matchesRole = roleFilter === 'todos' || rolDescripcion === roleFilter;
     
     return matchesSearch && matchesRole && usuario.habilitado;
   });
 
   // Estadísticas
-  const totalUsuarios = usuariosConRol.length;
-  const usuariosActivos = usuariosConRol.filter(u => u.habilitado).length;
-  const administradores = usuariosConRol.filter(u => u.rol_descripcion === 'admin').length;
+  const totalUsuarios = usuarios.length;
+  const usuariosActivos = usuarios.filter(u => u.habilitado).length;
+  const administradores = usuarios.filter(u => u.id_rol === 1).length;
 
   // Funciones para manejar modales
-  const handleCrearUsuario = async (datosUsuario) => {
+  const handleCrearUsuario = async (nuevoUsuario) => {
     try {
-      const nuevoUsuario = await createUsuario(datosUsuario);
-      console.log('Usuario creado:', nuevoUsuario);
-      // Aquí podrías actualizar el estado o recargar la lista
+      await usuariosService.create(nuevoUsuario);
+      await cargarUsuarios(); // Recargar lista
+      setModalCrearUsuario(false);
+      showToast('Usuario creado exitosamente', 'success');
     } catch (error) {
       console.error('Error al crear usuario:', error);
+      showToast('Error al crear usuario: ' + error.message, 'error');
     }
   };
 
   const handleEstablecerContrasenia = async (datosContrasenia) => {
     try {
-      await updateUsuario(datosContrasenia.usuario, { 
-        contrasenia: datosContrasenia.nuevaContrasenia,
-        reset: false // Ya no necesita establecer contraseña
+      await usuariosService.changePassword({
+        usuario: datosContrasenia.usuario,
+        nueva: datosContrasenia.nuevaContrasenia
       });
-      console.log('Contraseña establecida para:', datosContrasenia.usuario);
+      await cargarUsuarios(); // Recargar lista
+      setModalEstablecerContrasenia(false);
+      alert('Contraseña establecida exitosamente');
     } catch (error) {
       console.error('Error al establecer contraseña:', error);
+      alert('Error al establecer contraseña: ' + error.message);
     }
   };
 
   const handleRecuperarContrasenia = async (usuario) => {
     try {
-      // Simular verificación y envío de notificación
-      const usuarioEncontrado = usuariosConRol.find(u => u.usuario === usuario);
-      if (usuarioEncontrado) {
-        console.log('Solicitud de recuperación enviada para:', usuario);
-        return { success: true };
-      } else {
-        return { success: false, message: 'Usuario no encontrado' };
-      }
+      // TODO: Implementar endpoint de recuperación de contraseña en el backend
+      console.log('Solicitud de recuperación enviada para:', usuario);
+      return { success: true };
     } catch (error) {
       console.error('Error al solicitar recuperación:', error);
       return { success: false, message: 'Error del servidor' };
@@ -83,12 +117,21 @@ const Usuarios = () => {
   };
 
   const handleResetearContrasenia = async (usuario) => {
+    if (!confirm(`¿Resetear la contraseña de ${usuario.nombre}?`)) return;
+    
     try {
-      await updateUsuario(usuario.usuario, { reset: true });
-      console.log('Contraseña reseteada para:', usuario.usuario);
-      // Podrías mostrar una notificación de éxito aquí
+      // Extraer el ID correctamente
+      const id = usuario.id_usuario || usuario.idUsuario;
+      
+      await usuariosService.update(id, {
+        ...usuario,
+        reset: true
+      });
+      await cargarUsuarios();
+      showToast('Contraseña reseteada exitosamente', 'success');
     } catch (error) {
       console.error('Error al resetear contraseña:', error);
+      showToast('Error al resetear contraseña: ' + error.message, 'error');
     }
   };
 
@@ -99,13 +142,77 @@ const Usuarios = () => {
 
   const handleGuardarEdicionUsuario = async (datosUsuario) => {
     try {
-      await updateUsuario(datosUsuario.usuario, datosUsuario);
-      console.log('Usuario actualizado:', datosUsuario);
-      // Aquí podrías actualizar el estado o recargar la lista
+      // Asegurar que usamos id_usuario
+      const id = datosUsuario.id_usuario || datosUsuario.idUsuario;
+      
+      if (!id) {
+        throw new Error('No se encontró el ID del usuario');
+      }
+      
+      await usuariosService.update(id, datosUsuario);
+      await cargarUsuarios(); // Recargar lista
+      setModalEditarUsuario(false);
+      setUsuarioSeleccionado(null);
+      showToast('Usuario actualizado exitosamente', 'success');
     } catch (error) {
       console.error('Error al actualizar usuario:', error);
+      showToast('Error al actualizar usuario: ' + error.message, 'error');
     }
   };
+
+  const handleEliminarUsuario = async (usuario) => {
+    if (!confirm(`¿Estás seguro de eliminar al usuario ${usuario.nombre}? Esta acción no se puede deshacer.`)) return;
+    
+    try {
+      // Extraer el ID correctamente
+      const id = usuario.id_usuario || usuario.idUsuario;
+      
+      await usuariosService.delete(id);
+      await cargarUsuarios();
+      showToast('Usuario eliminado exitosamente', 'success');
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      showToast('Error al eliminar usuario: ' + error.message, 'error');
+    }
+  };
+
+  const handleDeshabilitarUsuario = async (usuario) => {
+    if (!confirm(`¿Deshabilitar al usuario ${usuario.nombre}?`)) return;
+    
+    try {
+      // Extraer el ID correctamente
+      const id = usuario.id_usuario || usuario.idUsuario;
+      
+      await usuariosService.disable(id);
+      await cargarUsuarios();
+      showToast('Usuario deshabilitado exitosamente', 'success');
+    } catch (error) {
+      console.error('Error al deshabilitar usuario:', error);
+      showToast('Error al deshabilitar usuario: ' + error.message, 'error');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#3F7416' }}></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+        <p>Error al cargar usuarios: {error}</p>
+        <button 
+          onClick={cargarUsuarios}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -240,13 +347,18 @@ const Usuarios = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {usuariosFiltrados.map((usuario) => (
+              {usuariosFiltrados.map((usuario) => {
+                const rolDescripcion = usuario.id_rol === 1 ? 'admin' : 
+                                      usuario.id_rol === 2 ? 'cajero' : 
+                                      'inventario';
+                
+                return (
                 <tr key={usuario.id_usuario} className="hover:bg-gray-50 transition-colors duration-200">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mr-3">
                         <span className="text-white font-medium text-sm">
-                          {usuario.nombre.charAt(0).toUpperCase()}
+                          {usuario.nombre?.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
@@ -254,7 +366,7 @@ const Usuarios = () => {
                           {usuario.nombre}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ID: {usuario.codigo}
+                          ID: {usuario.id_usuario}
                         </div>
                       </div>
                     </div>
@@ -264,17 +376,17 @@ const Usuarios = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      usuario.rol_descripcion === 'admin' ? 'bg-purple-100 text-purple-800' :
-                      usuario.rol_descripcion === 'cajero' ? 'bg-blue-100 text-blue-800' :
+                      rolDescripcion === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      rolDescripcion === 'cajero' ? 'bg-blue-100 text-blue-800' :
                       'bg-green-100 text-green-800'
                     }`}>
-                      {usuario.rol_descripcion === 'admin' ? 'Administrador' : 
-                       usuario.rol_descripcion === 'cajero' ? 'Cajero' : 
+                      {rolDescripcion === 'admin' ? 'Administrador' : 
+                       rolDescripcion === 'cajero' ? 'Cajero' : 
                        'Inventario'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(usuario.fecha_registro).toLocaleDateString()}
+                    {usuario.fechaRegistro ? new Date(usuario.fechaRegistro).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -295,6 +407,7 @@ const Usuarios = () => {
                       <button 
                         onClick={() => handleEditarUsuario(usuario)}
                         className="text-indigo-600 hover:text-indigo-900"
+                        title="Editar usuario"
                       >
                         <Edit className="w-4 h-4 inline mr-1" />
                         Editar
@@ -303,18 +416,24 @@ const Usuarios = () => {
                       <button 
                         onClick={() => handleResetearContrasenia(usuario)}
                         className="text-orange-600 hover:text-orange-900"
+                        title="Resetear contraseña"
                       >
                         <RotateCcw className="w-4 h-4 inline mr-1" />
                         Reset
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      
+                      <button 
+                        onClick={() => handleEliminarUsuario(usuario)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Eliminar usuario"
+                      >
                         <Trash2 className="w-4 h-4 inline mr-1" />
                         Eliminar
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -335,7 +454,11 @@ const Usuarios = () => {
         }}
         onSave={handleGuardarEdicionUsuario}
         usuario={usuarioSeleccionado}
-        roles={data?.rol || []}
+        roles={[
+          { id_rol: 1, descripcion: 'admin' },
+          { id_rol: 2, descripcion: 'cajero' },
+          { id_rol: 3, descripcion: 'inventario' }
+        ]}
       />
 
       <ModalEstablecerContrasenia
@@ -353,6 +476,15 @@ const Usuarios = () => {
         onClose={() => setModalOlvideContrasenia(false)}
         onRecuperarContrasenia={handleRecuperarContrasenia}
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

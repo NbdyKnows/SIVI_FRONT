@@ -17,7 +17,7 @@ export const APP_MODE = 'LOCAL'; // 'LOCAL' | 'DEVELOPMENT' | 'PRODUCTION'
  */
 const API_URLS = {
   LOCAL: null, // localStorage
-  DEVELOPMENT: 'http://localhost:8083/api',
+  DEVELOPMENT: 'http://localhost:8084/api',
   PRODUCTION: import.meta.env.VITE_API_BASE_URL_PROD || 'https://api.minimarket-losrobles.com/api',
 };
 
