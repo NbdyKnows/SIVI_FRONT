@@ -7,7 +7,7 @@
  * - 'PRODUCTION': Backend en producción desplegado
  */
 
-export const APP_MODE = 'DEVELOPMENT'; // 'LOCAL' | 'DEVELOPMENT' | 'PRODUCTION'
+export const APP_MODE = 'LOCAL'; // 'LOCAL' | 'DEVELOPMENT' | 'PRODUCTION'
 
 /**
  * URLs de la API según el modo
