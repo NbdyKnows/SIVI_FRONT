@@ -160,8 +160,8 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
               </h2>
             )}
             {isCollapsed && (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3F7416' }}>
-                <span className="text-white font-bold text-sm">MR</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" >
+                <img src="/src/assets/logo.png" alt="Logo" className="w-6 h-6" />
               </div>
             )}
           </div>
