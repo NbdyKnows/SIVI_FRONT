@@ -3,6 +3,30 @@ import { X, Send, Minimize2 } from "lucide-react";
 import roblecito from "../assets/roblecito.png";
 import { getChatResponse } from "../services/ChatIA";
 import { useAuth } from "../contexts/AuthContext";
+const FormattedMessage = ({ text }) => {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+
+  return (
+    <div className="text-sm leading-relaxed">
+      {lines.map((line, i) => {
+        const isListItem = line.trim().startsWith('*') || line.trim().startsWith('-');
+        
+        return (
+          <div key={i} className={`${isListItem ? 'pl-2 mb-1' : 'mb-2'} min-h-[1rem]`}>
+            {line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={j} className="font-bold">{part.slice(2, -2)}</strong>;
+              }
+              return <span key={j}>{part}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const ChatAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +36,7 @@ const ChatAssistant = () => {
   const [messages, setMessages] = useState([
     {
       id: crypto.randomUUID(),
-      text: "Hola! Soy Roblecito, tu asistente virtual del sistema SIVI. ¿En que puedo ayudarte hoy?",
+      text: "¡Hola! Soy Roblecito, tu asistente virtual del sistema SIVI. ¿En qué puedo ayudarte hoy?",
       isBot: true,
       timestamp: new Date(),
     },
@@ -27,6 +51,7 @@ const ChatAssistant = () => {
     const threshold = 100;
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   };
+
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -36,11 +61,13 @@ const ChatAssistant = () => {
       });
     }
   }, [messages, loading]);
+
   const handleScroll = () => {
     const container = messagesContainerRef.current;
     if (!container) return;
     shouldAutoScrollRef.current = isNearBottom(container);
   };
+
   const handleToggleChat = () => {
     if (isOpen && isMinimized) {
       setIsMinimized(false);
@@ -49,6 +76,7 @@ const ChatAssistant = () => {
       setIsMinimized(false);
     }
   };
+
   const handleMinimize = () => setIsMinimized(true);
   const handleClose = () => {
     setIsOpen(false);
@@ -58,14 +86,13 @@ const ChatAssistant = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-
     if (!isAuthenticated) {
       console.error("ChatAssistant: Usuario no autenticado.");
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
-          text: "Tu sesión ha expirado. Por favor, refresca la página e inicia sesión para usar el chat.",
+          text: "Tu sesión ha expirado o no has iniciado sesión. Por favor, ingresa al sistema para hablar conmigo.",
           isBot: true,
           timestamp: new Date(),
         },
@@ -86,7 +113,6 @@ const ChatAssistant = () => {
     shouldAutoScrollRef.current = true;
 
     try {
-
       const replyText = await getChatResponse(message);
 
       const botResponse = {
@@ -103,7 +129,7 @@ const ChatAssistant = () => {
         ...prev,
         {
           id: crypto.randomUUID(),
-          text: "No pude conectarme con Roblecito en este momento. Por favor, intentelo mas tarde.",
+          text: "No pude conectarme con Roblecito en este momento. Por favor, inténtalo más tarde.",
           isBot: true,
           timestamp: new Date(),
         },
@@ -153,7 +179,7 @@ const ChatAssistant = () => {
               ? "scale-95 opacity-0 pointer-events-none"
               : "scale-100 opacity-100 animate-slide-up-chat"
           }`}
-          style={{ height: isMinimized ? "0" : "400px" }}
+          style={{ height: isMinimized ? "0" : "450px" }}
         >
           <div
             className="flex items-center justify-between p-4 border-b border-gray-200 rounded-t-2xl"
@@ -202,28 +228,31 @@ const ChatAssistant = () => {
               overscrollBehavior: "contain",
             }}
           >
-            <div className="space-y-3">
+            <div className="space-y-4">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.isBot ? "justify-start" : "justify-end"}`}
                 >
                   <div
-                    className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
+                    className={`max-w-[85%] px-4 py-2 rounded-2xl text-sm shadow-sm ${
                       msg.isBot
-                        ? "bg-gray-100 text-gray-800 rounded-bl-none"
+                        ? "bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200"
                         : "text-white rounded-br-none"
                     }`}
                     style={!msg.isBot ? { backgroundColor: "#3F7416" } : {}}
                   >
-                    {msg.text}
+                    {/* Usamos el helper para renderizar con formato */}
+                    {msg.isBot ? <FormattedMessage text={msg.text} /> : msg.text}
                   </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 text-gray-500 px-4 py-2 rounded-2xl text-sm italic">
-                    Roblecito esta escribiendo...
+                  <div className="bg-gray-50 text-gray-400 px-4 py-2 rounded-2xl text-xs italic flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></span>
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></span>
                   </div>
                 </div>
               )}
@@ -237,11 +266,11 @@ const ChatAssistant = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
               />
               <button
                 type="submit"
-                className="p-2 rounded-full text-white hover:opacity-90 transition-opacity duration-200"
+                className="p-2 rounded-full text-white hover:opacity-90 transition-all transform active:scale-95"
                 style={{ backgroundColor: "#3F7416" }}
               >
                 <Send className="w-4 h-4" />
@@ -256,6 +285,7 @@ const ChatAssistant = () => {
 
 export default ChatAssistant;
 
+// Estilos CSS en JS
 const styles = `
 @keyframes slide-up-chat {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
