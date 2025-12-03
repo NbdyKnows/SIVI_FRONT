@@ -14,6 +14,10 @@ import AgregarStock from './pages/AgregarStock';
 import Reportes from './pages/Reportes';
 import Usuarios from './pages/Usuarios';
 import CajaChica from './pages/CajaChica';
+import Movimiento from './pages/Movimiento';
+// import RegistrarMovimiento from './pages/movimientos/RegistrarMovimiento';
+// import HistorialMovimientos from './pages/movimientos/HistorialMovimientos';
+
 
 function App() {
   return (
@@ -31,7 +35,7 @@ function App() {
               <Login />
             </PublicRoute>
           } />
-          
+
           {/* Rutas protegidas con Layout */}
           <Route path="/app" element={
             <ProtectedRoute>
@@ -48,8 +52,12 @@ function App() {
             <Route path="inventario/agregar-stock" element={<AgregarStock />} />
             <Route path="reportes" element={<Reportes />} />
             <Route path="usuarios" element={<Usuarios />} />
+            <Route path="movimiento" element={<Movimiento />} />
+            {/* <Route path="movimientos/registrar" element={<RegistrarMovimiento />} />
+            <Route path="movimientos/historial" element={<HistorialMovimientos />} />
+            <Route path="movimientos/ajustes" element={<AjustesInventario />} /> */}
           </Route>
-          
+
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -20,6 +20,7 @@ export { clientesEndpoints } from './endpoints/clientesEndpoints';
 export { descuentosEndpoints } from './endpoints/descuentosEndpoints';
 export { cajaChicaEndpoints } from './endpoints/cajaChicaEndpoints';
 export { reportesEndpoints } from './endpoints/reportesEndpoints';
+export { movimientosEndpoints } from './endpoints/movimientosEndpoints';
 
 /**
  * Objeto con todos los endpoints organizados (opcional)
@@ -36,6 +37,7 @@ import { clientesEndpoints } from './endpoints/clientesEndpoints';
 import { descuentosEndpoints } from './endpoints/descuentosEndpoints';
 import { cajaChicaEndpoints } from './endpoints/cajaChicaEndpoints';
 import { reportesEndpoints } from './endpoints/reportesEndpoints';
+import { movimientosEndpoints } from './endpoints/movimientosEndpoints';
 
 export const API_ENDPOINTS = {
   auth: authEndpoints,
@@ -49,6 +51,7 @@ export const API_ENDPOINTS = {
   descuentos: descuentosEndpoints,
   cajaChica: cajaChicaEndpoints,
   reportes: reportesEndpoints,
+  movimiento: movimientosEndpoints
 };
 
 export default API_ENDPOINTS;

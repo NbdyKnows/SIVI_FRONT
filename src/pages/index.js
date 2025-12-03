@@ -10,3 +10,4 @@ export { default as Inventario } from './Inventario';
 export { default as AgregarStock } from './AgregarStock';
 export { default as Reportes } from './Reportes';
 export { default as Usuarios } from './Usuarios';
+export { default as Movimiento } from './Movimiento';
