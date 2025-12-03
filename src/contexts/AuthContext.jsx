@@ -4,7 +4,7 @@ import databaseData from '../data/database.json';
 
 // Mapeo de roles del backend a permisos del frontend
 const ROLE_PERMISSIONS = {
-  ADMIN: ['ventas', 'compras', 'productos', 'descuentos', 'inventario', 'agregar-stock', 'reportes', 'usuarios', 'caja-chica'],
+  ADMIN: ['ventas', 'compras', 'productos', 'descuentos', 'inventario', 'agregar-stock', 'reportes', 'usuarios', 'caja-chica','movimiento'],
   CAJA: ['ventas', 'caja-chica'],
   ALMACEN: ['productos', 'descuentos', 'inventario', 'agregar-stock'],
   // Soporte para roles antiguos (modo LOCAL)

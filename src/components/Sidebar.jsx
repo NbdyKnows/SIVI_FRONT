@@ -14,7 +14,9 @@ import {
   LogOut,
   DollarSign,
   Warehouse,
-  PackagePlus
+  PackagePlus,
+  PlusCircle,
+  RotateCcw
 } from 'lucide-react';
 
 /**
@@ -90,6 +92,37 @@ const menuItems = [
     path: '/app/usuarios',
     permission: 'usuarios'
   },
+  {
+    id: 'movimiento',
+    label: 'Movimientos',
+    icon: Warehouse,
+    path: '/app/movimiento',
+    permission: 'movimiento',
+    hasSubmenu: true,
+    submenu: [
+      {
+        id: 'registrar-movimiento',
+        label: 'Registrar Movimiento',
+        icon: PlusCircle,
+        path: '/app/movimiento/registrar',
+        permission: 'registrar-movimiento'
+      },
+      {
+        id: 'historial-movimientos',
+        label: 'Historial',
+        icon: History,
+        path: '/app/movimiento/historial',
+        permission: 'historial-movimientos'
+      },
+      {
+        id: 'ajustes-inventario',
+        label: 'Ajustes',
+        icon: RotateCcw,
+        path: '/app/movimiento/ajustes',
+        permission: 'ajustes-inventario'
+      }
+    ]
+  }
 ];
 
 /**
@@ -105,7 +138,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
     // Siempre navegar a la página principal del elemento
     navigate(item.path);
     if (onClose) onClose(); // Cerrar sidebar en móviles
-    
+
     // Si tiene submenú, también manejar la expansión/colapso
     if (item.hasSubmenu) {
       setExpandedMenus(prev => ({
@@ -134,7 +167,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
   };
 
   // Filtrar elementos del menú según permisos
-  const filteredMenuItems = menuItems.filter(item => 
+  const filteredMenuItems = menuItems.filter(item =>
     hasPermission(item.permission)
   );
 
@@ -165,7 +198,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
               </div>
             )}
           </div>
-          
+
           {/* User Info */}
           {!isCollapsed && user && (
             <div className="px-3 lg:px-4 pb-4">
@@ -191,7 +224,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
               <ChevronLeft className="w-4 h-4 text-gray-600" />
             )}
           </button>
-          
+
           {/* Menu Items - Con scroll solo cuando NO está colapsado */}
           <div className={`flex-1 ${isCollapsed ? '' : 'overflow-y-auto'}`}>
             <ul className="space-y-2">
@@ -199,7 +232,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                 const IconComponent = item.icon;
                 const isActive = isItemActive(item.path);
                 const isExpanded = expandedMenus[item.id];
-                
+
                 return (
                   <li key={item.id}>
                     <button
@@ -207,21 +240,20 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                       className={`
                         w-full flex items-center rounded-lg text-left transition-all duration-200 group relative
                         ${isCollapsed ? 'justify-center px-3 py-3' : 'justify-between px-4 py-3'}
-                        ${
-                          isActive
-                            ? 'bg-green-50 shadow-sm border border-green-100'
-                            : 'hover:bg-gray-50 hover:shadow-sm'
+                        ${isActive
+                          ? 'bg-green-50 shadow-sm border border-green-100'
+                          : 'hover:bg-gray-50 hover:shadow-sm'
                         }
                       `}
                       title={isCollapsed ? item.label : undefined}
                     >
                       <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
-                        <IconComponent 
-                          className="w-6 h-6 flex-shrink-0" 
+                        <IconComponent
+                          className="w-6 h-6 flex-shrink-0"
                           style={{ color: '#633416' }}
                         />
                         {!isCollapsed && (
-                          <span 
+                          <span
                             className="font-medium whitespace-nowrap text-base"
                             style={{ color: '#3F7416' }}
                           >
@@ -229,7 +261,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                           </span>
                         )}
                       </div>
-                      
+
                       {!isCollapsed && item.hasSubmenu && (
                         <div className="flex-shrink-0">
                           {isExpanded ? (
@@ -239,7 +271,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                           )}
                         </div>
                       )}
-                      
+
                       {/* Tooltip para modo colapsado */}
                       {isCollapsed && (
                         <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
@@ -248,32 +280,31 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                         </div>
                       )}
                     </button>
-                    
+
                     {/* Submenu */}
                     {item.hasSubmenu && isExpanded && !isCollapsed && (
                       <ul className="mt-2 ml-6 space-y-1">
                         {item.submenu.filter(submenuItem => hasPermission(submenuItem.permission)).map((submenuItem) => {
                           const SubmenuIcon = submenuItem.icon;
                           const isSubmenuItemActive = isSubmenuActive(submenuItem.path);
-                          
+
                           return (
                             <li key={submenuItem.id}>
                               <button
                                 onClick={() => handleSubmenuClick(submenuItem)}
                                 className={`
                                   w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-left transition-all duration-200
-                                  ${
-                                    isSubmenuItemActive
-                                      ? 'bg-green-100 shadow-sm'
-                                      : 'hover:bg-gray-50'
+                                  ${isSubmenuItemActive
+                                    ? 'bg-green-100 shadow-sm'
+                                    : 'hover:bg-gray-50'
                                   }
                                 `}
                               >
-                                <SubmenuIcon 
-                                  className="w-5 h-5 flex-shrink-0" 
+                                <SubmenuIcon
+                                  className="w-5 h-5 flex-shrink-0"
                                   style={{ color: '#633416' }}
                                 />
-                                <span 
+                                <span
                                   className="font-medium text-sm"
                                   style={{ color: '#3F7416' }}
                                 >
@@ -290,7 +321,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
               })}
             </ul>
           </div>
-          
+
           {/* Botón de Logout - Al final del sidebar */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <button
@@ -303,8 +334,8 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
               title={isCollapsed ? 'Cerrar Sesión' : undefined}
             >
               <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
-                <LogOut 
-                  className="w-6 h-6 flex-shrink-0 text-red-600" 
+                <LogOut
+                  className="w-6 h-6 flex-shrink-0 text-red-600"
                 />
                 {!isCollapsed && (
                   <span className="font-medium whitespace-nowrap text-base text-red-600">
@@ -312,7 +343,7 @@ const Sidebar = ({ isOpen = true, isCollapsed = false, onClose, onToggleCollapse
                   </span>
                 )}
               </div>
-              
+
               {/* Tooltip para modo colapsado */}
               {isCollapsed && (
                 <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
