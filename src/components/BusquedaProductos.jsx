@@ -78,7 +78,7 @@ const BusquedaProductos = ({
             </>
           ) : (
             <div className="border px-4 py-2 rounded-lg" style={{ backgroundColor: '#F5F5F5', borderColor: '#CCCCCC' }}>
-              <span className="text-sm font-semibold" style={{ color: '#633416' }}>Total: S/ {total.toFixed(2)}</span>
+              <span className="text-sm font-semibold" style={{ color: '#633416' }}>Total: S/ {(total || 0).toFixed(2)}</span>
             </div>
           )}
       </div>

@@ -175,3 +175,11 @@ export const generarReporteFinanciero = async (opciones) => {
     throw error;
   }
 };
+
+const reportesService = {
+  generarReporteDeVentas,
+  generarReporteInventario,
+  generarReporteFinanciero,
+};
+
+export default reportesService;

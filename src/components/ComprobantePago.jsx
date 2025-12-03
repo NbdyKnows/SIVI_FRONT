@@ -26,17 +26,17 @@ const ComprobantePago = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center text-xs sm:text-sm">
             <span style={{ color: '#666666' }}>Subtotal S/</span>
-            <span style={{ color: '#000000' }}>{subtotal.toFixed(2)}</span>
+            <span style={{ color: '#000000' }}>{(subtotal || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center text-xs sm:text-sm">
             <span style={{ color: '#666666' }}>IGV S/</span>
-            <span style={{ color: '#000000' }}>{igv.toFixed(2)}</span>
+            <span style={{ color: '#000000' }}>{(igv || 0).toFixed(2)}</span>
           </div>
           {/* Descuentos por productos */}
           {descuentos > 0 && (
             <div className="flex justify-between items-center text-xs sm:text-sm">
               <span style={{ color: '#666666' }}>Desc. Productos (-) S/</span>
-              <span style={{ color: '#F59E0B' }}>{descuentos.toFixed(2)}</span>
+              <span style={{ color: '#F59E0B' }}>{(descuentos || 0).toFixed(2)}</span>
             </div>
           )}
           
@@ -44,12 +44,12 @@ const ComprobantePago = ({
           {descuentoFidelidad && descuentoFidelidad.porcentaje > 0 && (
             <div className="flex justify-between items-center text-xs sm:text-sm">
               <span style={{ color: '#666666' }}>Desc. Fidelidad ({descuentoFidelidad.porcentaje}%) (-) S/</span>
-              <span style={{ color: '#F59E0B' }}>{descuentoFidelidad.monto.toFixed(2)}</span>
+              <span style={{ color: '#F59E0B' }}>{(descuentoFidelidad.monto || 0).toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between items-center py-2 border-t border-b font-semibold" style={{ borderColor: '#CCCCCC' }}>
             <span style={{ color: '#633416' }}>Total S/</span>
-            <span className="text-lg font-bold" style={{ color: '#3F7416' }}>{total.toFixed(2)}</span>
+            <span className="text-lg font-bold" style={{ color: '#3F7416' }}>{(total || 0).toFixed(2)}</span>
           </div>
         </div>
 

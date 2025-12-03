@@ -6,6 +6,10 @@ import { ModalVenta, ModalCliente } from '../components/modales';
 import BusquedaProductos from '../components/BusquedaProductos';
 import TablaProductos from '../components/TablaProductos';
 import ComprobantePago from '../components/ComprobantePago';
+import ventasService from '../services/ventasService';
+import inventarioService from '../services/inventarioService';
+import descuentosService from '../services/descuentosService';
+import clientesService from '../services/clientesService';
 
 const Ventas = () => {
   const { data: database, updateInventario } = useDatabase();
@@ -21,48 +25,58 @@ const Ventas = () => {
   const [ventaExitosa, setVentaExitosa] = useState(false);
   const [clienteDNI, setClienteDNI] = useState('');
   const [showClienteModal, setShowClienteModal] = useState(false);
-  const [descuentos, setDescuentos] = useState(0); // Mantener para compatibilidad
-  const [descuentoFidelidad, setDescuentoFidelidad] = useState(0);
   const [productosConDescuento, setProductosConDescuento] = useState([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [aplicaDescuentoFidelidad, setAplicaDescuentoFidelidad] = useState(false);
+  const [porcentajeDescuentoFidelidad, setPorcentajeDescuentoFidelidad] = useState(0);
   
   // Estados adicionales para descuentos automáticos
   const [mostrarDescuentoFidelidad, setMostrarDescuentoFidelidad] = useState(false);
 
-  // Función para obtener descuentos activos desde localStorage
-  const obtenerDescuentosActivos = () => {
-    const descuentosGuardados = localStorage.getItem('descuentos_sivi');
-    if (!descuentosGuardados) return [];
+  // Función para verificar descuento de fidelidad desde el backend
+  const verificarDescuentoFidelidad = async (idCliente) => {
+    if (!idCliente) {
+      setAplicaDescuentoFidelidad(false);
+      setPorcentajeDescuentoFidelidad(0);
+      return;
+    }
     
-    const descuentos = JSON.parse(descuentosGuardados);
-    const hoy = new Date();
-    
-    return descuentos.filter(descuento => {
-      const fechaInicio = new Date(descuento.fecha_inicio);
-      const fechaFin = new Date(descuento.fecha_fin);
-      return descuento.activo && fechaInicio <= hoy && fechaFin >= hoy;
-    });
+    try {
+      const { aplicaDescuentoFidelidad, porcentaje } = await clientesService.verificarDescuentoFidelidad(idCliente);
+      setAplicaDescuentoFidelidad(aplicaDescuentoFidelidad);
+      setPorcentajeDescuentoFidelidad(porcentaje || 0);
+    } catch (error) {
+      console.error('Error al verificar descuento de fidelidad:', error);
+      setAplicaDescuentoFidelidad(false);
+      setPorcentajeDescuentoFidelidad(0);
+    }
   };
 
-  // Función para calcular descuento de fidelidad (10 compras en un mes = 10%)
-  const calcularDescuentoFidelidad = (dni) => {
-    if (!dni) return 0;
-    
-    const ventas = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-    const hace30Dias = new Date();
-    hace30Dias.setDate(hace30Dias.getDate() - 30);
-    
-    const comprasRecientes = ventas.filter(venta => {
-      const fechaVenta = new Date(venta.fecha);
-      return venta.cliente === dni && fechaVenta >= hace30Dias;
-    });
-    
-    // Si tiene 10 o más compras en el último mes, aplicar 10% de descuento
-    return comprasRecientes.length >= 10 ? 10 : 0;
+  // Función para obtener descuentos activos desde el backend
+  const obtenerDescuentosActivos = async () => {
+    try {
+      const descuentos = await descuentosService.getActivos();
+      return descuentos;
+    } catch (error) {
+      console.warn('⚠️ Error al obtener descuentos del backend, usando localStorage:', error);
+      // Fallback a localStorage
+      const descuentosGuardados = localStorage.getItem('descuentos_sivi');
+      if (!descuentosGuardados) return [];
+      
+      const descuentos = JSON.parse(descuentosGuardados);
+      const hoy = new Date();
+      
+      return descuentos.filter(descuento => {
+        const fechaInicio = new Date(descuento.fecha_inicio);
+        const fechaFin = new Date(descuento.fecha_fin);
+        return descuento.activo && fechaInicio <= hoy && fechaFin >= hoy;
+      });
+    }
   };
 
   // Función para aplicar descuentos a productos
-  const aplicarDescuentosAProductos = (productos) => {
-    const descuentosActivos = obtenerDescuentosActivos();
+  const aplicarDescuentosAProductos = async (productos) => {
+    const descuentosActivos = await obtenerDescuentosActivos();
     
     return productos.map(producto => {
       let descuentoAplicable = null;
@@ -120,11 +134,21 @@ const Ventas = () => {
     };
   }).filter(p => p.stock > 0) || [];
 
-  // Aplicar descuentos a productos disponibles
-  const productosConDescuentos = aplicarDescuentosAProductos(productos);
+  // Cargar y aplicar descuentos cuando cambie la base de datos
+  useEffect(() => {
+    const cargarDescuentos = async () => {
+      if (productos.length > 0) {
+        const productosConDesc = await aplicarDescuentosAProductos(productos);
+        setProductosConDescuento(productosConDesc);
+      }
+    };
+    
+    cargarDescuentos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [database]);
 
   // Filtrar productos por búsqueda
-  const productosFiltrados = productosConDescuentos.filter(producto => {
+  const productosFiltrados = productosConDescuento.filter(producto => {
     return (
       producto.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       producto.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,17 +212,12 @@ const Ventas = () => {
     );
   };
 
-  // Calcular totales con descuentos incluidos
-  const totalConIGV = productosVenta.reduce((sum, producto) => {
-    const precioFinal = producto.precio_con_descuento || producto.precio_venta;
-    return sum + (precioFinal * producto.cantidad);
-  }, 0);
+  // Calcular subtotal sin IGV y descuentos por productos
   const subtotal = productosVenta.reduce((sum, producto) => {
     const precioFinal = producto.precio_con_descuento || producto.precio_venta;
     const precioSinIGV = precioFinal / 1.18; // Precio sin IGV
     return sum + (precioSinIGV * producto.cantidad);
   }, 0);
-  const igv = totalConIGV - subtotal; // IGV es la diferencia
   
   // Calcular descuento total por productos
   const descuentoProductos = productosVenta.reduce((sum, producto) => {
@@ -209,12 +228,15 @@ const Ventas = () => {
     return sum;
   }, 0);
   
-  // Calcular descuento de fidelidad sobre el total
-  const porcentajeFidelidad = calcularDescuentoFidelidad(clienteDNI);
-  const descuentoFidelidadMonto = (totalConIGV * porcentajeFidelidad) / 100;
+  // Calcular descuento de fidelidad sobre el subtotal
+  const descuentoFidelidadMonto = aplicaDescuentoFidelidad ? (subtotal * porcentajeDescuentoFidelidad / 100) : 0;
+  
+  // Calcular IGV sobre el subtotal con descuento de fidelidad aplicado
+  const subtotalConDescuentoFidelidad = subtotal - descuentoFidelidadMonto;
+  const igv = subtotalConDescuentoFidelidad * 0.18;
   
   // Total final
-  const total = totalConIGV - descuentoFidelidadMonto;
+  const total = subtotalConDescuentoFidelidad + igv;
 
   // Procesar venta y generar comprobante
   const procesarVenta = async () => {
@@ -233,78 +255,110 @@ const Ventas = () => {
     setIsProcessing(true);
     setVentaExitosa(false);
 
-    // Simular procesamiento de venta
-    setTimeout(() => {
-      try {
-        // Crear registro de venta para localStorage
-        const ventaData = {
-          id: Date.now(),
-          fecha: new Date().toISOString(),
-          vendedor: selectedVendedor,
-          cliente: clienteDNI || 'Sin registro',
-          productos: productosVenta.map(p => {
-            const precioFinal = p.precio_con_descuento || p.precio_venta;
-            return {
-              id_producto: p.id_producto,
-              nombre: p.nombre,
-              cantidad: p.cantidad,
-              precio_unitario: p.precio_venta,
-              precio_con_descuento: precioFinal,
-              descuento_aplicado: p.descuento ? {
-                nombre: p.descuento.nombre,
-                tipo: p.descuento.tipo_descuento,
-                valor: p.descuento_valor
-              } : null,
-              subtotal: (precioFinal / 1.18) * p.cantidad,
-              igv: ((precioFinal / 1.18) * 0.18) * p.cantidad,
-              total: precioFinal * p.cantidad
-            };
-          }),
-          subtotal: subtotal,
-          igv: igv,
-          descuento_productos: descuentoProductos,
-          descuento_fidelidad: {
-            porcentaje: porcentajeFidelidad,
-            monto: descuentoFidelidadMonto
-          },
-          total: total,
-          metodoPago: metodoPago
-        };
+    try {
+      // Preparar datos de venta
+      const ventaData = {
+        idUsuario: user?.id_usuario || user?.idUsuario,
+        idCliente: clienteSeleccionado?.idCliente || null,
+        descuentoTotal: descuentoFidelidadMonto + descuentoProductos,
+        subtotal: subtotal,
+        igv: igv,
+        total: total,
+        detalles: productosVenta.map(p => {
+          return {
+            idProducto: p.id_producto,
+            idOferta: null,
+            descuentoItem: p.descuento_valor || 0,
+            precio: p.precio_venta,
+            cantidad: p.cantidad
+          };
+        })
+      };
 
-        // Guardar venta en localStorage
-        const ventasExistentes = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-        ventasExistentes.push(ventaData);
-        localStorage.setItem('sivi_ventas', JSON.stringify(ventasExistentes));
+      console.log('📤 Enviando venta al backend:', ventaData);
 
-        // Actualizar stock en database y localStorage
-        const inventarioActualizado = { ...database };
-        productosVenta.forEach(producto => {
-          const inventarioActual = inventarioActualizado?.inventario?.find(inv => inv.id_producto === producto.id_producto && inv.habilitado);
-          if (inventarioActual) {
-            const nuevoStock = inventarioActual.stock - producto.cantidad;
-            // Actualizar en database (contexto)
-            updateInventario(producto.id_producto, inventarioActual.id_movimiento_cab, nuevoStock, inventarioActual.precio);
-            // Actualizar en copia local para localStorage
-            inventarioActual.stock = nuevoStock;
-          }
-        });
+      // Enviar venta al backend
+      const ventaCreada = await ventasService.create(ventaData);
+      
+      console.log('✅ Venta procesada exitosamente:', ventaCreada);
+      
+      // Actualizar stock localmente para sincronización inmediata
+      const inventarioActualizado = { ...database };
+      productosVenta.forEach(producto => {
+        const inventarioActual = inventarioActualizado?.inventario?.find(
+          inv => inv.id_producto === producto.id_producto && inv.habilitado
+        );
+        if (inventarioActual) {
+          const nuevoStock = inventarioActual.stock - producto.cantidad;
+          updateInventario(producto.id_producto, inventarioActual.id_movimiento_cab, nuevoStock, inventarioActual.precio);
+        }
+      });
+      
+      // Mostrar éxito
+      setIsProcessing(false);
+      setVentaExitosa(true);
+      
+    } catch (error) {
+      console.error('❌ Error procesando venta:', error);
+      
+      // Guardar en localStorage como fallback
+      console.warn('Guardando venta en localStorage como respaldo...');
+      const ventaData = {
+        id: Date.now(),
+        fecha: new Date().toISOString(),
+        vendedor: selectedVendedor,
+        cliente: clienteDNI || 'Sin registro',
+        productos: productosVenta.map(p => {
+          const precioFinal = p.precio_con_descuento || p.precio_venta;
+          return {
+            id_producto: p.id_producto,
+            nombre: p.nombre,
+            cantidad: p.cantidad,
+            precio_unitario: p.precio_venta,
+            precio_con_descuento: precioFinal,
+            descuento_aplicado: p.descuento ? {
+              nombre: p.descuento.nombre,
+              tipo: p.descuento.tipo_descuento,
+              valor: p.descuento_valor
+            } : null,
+            subtotal: (precioFinal / 1.18) * p.cantidad,
+            igv: ((precioFinal / 1.18) * 0.18) * p.cantidad,
+            total: precioFinal * p.cantidad
+          };
+        }),
+        subtotal: subtotal,
+        igv: igv,
+        descuento_productos: descuentoProductos,
+        descuento_fidelidad: {
+          porcentaje: porcentajeDescuentoFidelidad,
+          monto: descuentoFidelidadMonto
+        },
+        total: total,
+        metodoPago: metodoPago
+      };
 
-        // Guardar inventario actualizado en localStorage
-        localStorage.setItem('sivi_inventario_temp', JSON.stringify(inventarioActualizado.inventario));
-        
-        console.log('Venta procesada:', ventaData);
-        console.log('Stock actualizado en localStorage');
-        
-        // Mostrar éxito
-        setIsProcessing(false);
-        setVentaExitosa(true);
-      } catch (error) {
-        console.error('Error procesando venta:', error);
-        alert('Error al procesar la venta');
-        setShowModal(false);
-        setIsProcessing(false);
-      }
-    }, 2000);
+      const ventasExistentes = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
+      ventasExistentes.push(ventaData);
+      localStorage.setItem('sivi_ventas', JSON.stringify(ventasExistentes));
+      
+      // Actualizar stock local
+      const inventarioActualizado = { ...database };
+      productosVenta.forEach(producto => {
+        const inventarioActual = inventarioActualizado?.inventario?.find(
+          inv => inv.id_producto === producto.id_producto && inv.habilitado
+        );
+        if (inventarioActual) {
+          const nuevoStock = inventarioActual.stock - producto.cantidad;
+          updateInventario(producto.id_producto, inventarioActual.id_movimiento_cab, nuevoStock, inventarioActual.precio);
+          inventarioActual.stock = nuevoStock;
+        }
+      });
+      localStorage.setItem('sivi_inventario_temp', JSON.stringify(inventarioActualizado.inventario));
+      
+      alert('Venta guardada localmente. Sincronizar con el servidor cuando esté disponible.');
+      setIsProcessing(false);
+      setVentaExitosa(true);
+    }
   };
 
   // Cerrar modal y limpiar formulario
@@ -328,9 +382,15 @@ const Ventas = () => {
     setShowClienteModal(false);
   };
 
-  const guardarCliente = (dni) => {
-    setClienteDNI(dni);
+  const guardarCliente = async (cliente) => {
+    setClienteDNI(cliente.dni || cliente.numeroDocumento);
+    setClienteSeleccionado(cliente);
     setShowClienteModal(false);
+    
+    // Verificar descuento de fidelidad
+    if (cliente.idCliente) {
+      await verificarDescuentoFidelidad(cliente.idCliente);
+    }
   };
 
   // Función para limpiar datos de prueba (desarrollo)
@@ -388,10 +448,20 @@ const Ventas = () => {
 
   // Actualizar descuento de fidelidad cuando cambie el cliente
   useEffect(() => {
-    const porcentaje = calcularDescuentoFidelidad(clienteDNI);
-    setDescuentoFidelidad(porcentaje);
-    setMostrarDescuentoFidelidad(porcentaje > 0);
-  }, [clienteDNI]);
+    const actualizarDescuento = async () => {
+      if (clienteSeleccionado?.idCliente) {
+        await verificarDescuentoFidelidad(clienteSeleccionado.idCliente);
+        setMostrarDescuentoFidelidad(aplicaDescuentoFidelidad);
+      } else {
+        setAplicaDescuentoFidelidad(false);
+        setPorcentajeDescuentoFidelidad(0);
+        setMostrarDescuentoFidelidad(false);
+      }
+    };
+    
+    actualizarDescuento();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteSeleccionado]);
 
   // Inicializar vendedor actual automáticamente
   useEffect(() => {
@@ -489,13 +559,13 @@ const Ventas = () => {
                   ¡Cliente Fidelizado!
                 </h3>
                 <p className="text-xs mt-1" style={{ color: '#78350F' }}>
-                  El cliente {clienteDNI} tiene {calcularDescuentoFidelidad(clienteDNI) === 10 ? '10 o más' : ''} compras en el último mes.
-                  <strong> Descuento automático del {descuentoFidelidad}% aplicado.</strong>
+                  El cliente tiene compras suficientes en el último mes.
+                  <strong> Descuento automático del {porcentajeDescuentoFidelidad}% aplicado.</strong>
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
                 <span className="text-base sm:text-lg font-bold" style={{ color: '#F59E0B' }}>
-                  -{descuentoFidelidad}%
+                  -{porcentajeDescuentoFidelidad}%
                 </span>
               </div>
             </div>
@@ -519,7 +589,7 @@ const Ventas = () => {
                 setCantidadSeleccionada={setCantidadSeleccionada}
                 agregarProducto={agregarProducto}
                 total={total}
-                descuentoFidelidad={porcentajeFidelidad}
+                descuentoFidelidad={porcentajeDescuentoFidelidad}
                 clienteDNI={clienteDNI}
               />
             </div>
@@ -542,7 +612,7 @@ const Ventas = () => {
               igv={igv}
               descuentos={descuentoProductos}
               descuentoFidelidad={{
-                porcentaje: porcentajeFidelidad,
+                porcentaje: porcentajeDescuentoFidelidad,
                 monto: descuentoFidelidadMonto
               }}
               total={total}

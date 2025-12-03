@@ -1,62 +1,124 @@
 import React, { useState, useEffect } from 'react';
 import { Percent, Tag, Calendar, TrendingDown, Edit, Trash2, Plus, Package, Grid, Eye } from 'lucide-react';
 import { ModalDescuento } from '../components/modales';
+import { descuentosService } from '../services';
 
 const Descuentos = () => {
   const [descuentos, setDescuentos] = useState([]);
+  const [estadisticas, setEstadisticas] = useState({
+    activos: 0,
+    productosConDescuento: 0,
+    ahorroTotal: 0,
+    proximosVencer: 0
+  });
   const [modalDescuentoOpen, setModalDescuentoOpen] = useState(false);
   const [descuentoSeleccionado, setDescuentoSeleccionado] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('all');
+  const [cargando, setCargando] = useState(true);
 
-  // Cargar descuentos desde localStorage
+  // Cargar descuentos desde el backend
   useEffect(() => {
-    const descuentosGuardados = localStorage.getItem('descuentos_sivi');
-    if (descuentosGuardados) {
-      setDescuentos(JSON.parse(descuentosGuardados));
-    } else {
-      // Datos de ejemplo
-      const descuentosEjemplo = [
-        {
-          id: 1,
-          nombre: 'Descuento Navideño',
-          descripcion: 'Promoción especial por Navidad',
-          tipo_aplicacion: 'categoria',
-          tipo_descuento: 'porcentaje',
-          valor: 15,
-          fecha_inicio: '2024-12-01',
-          fecha_fin: '2024-12-31',
-          productos_seleccionados: [],
-          categorias_seleccionadas: [
-            { id: 'bebidas', nombre: 'Bebidas', productos_count: 15 },
-            { id: 'snacks', nombre: 'Snacks', productos_count: 23 }
-          ],
-          activo: true,
-          fecha_creacion: '2024-11-15T10:00:00.000Z'
-        },
-        {
-          id: 2,
-          nombre: 'Productos Lácteos',
-          descripcion: 'Descuento en productos lácteos seleccionados',
-          tipo_aplicacion: 'producto',
-          tipo_descuento: 'monto_fijo',
-          valor: 2.50,
-          fecha_inicio: '2024-12-15',
-          fecha_fin: '2025-01-15',
-          productos_seleccionados: [
-            { id: 3, nombre: 'Leche Gloria 1L', categoria: 'Lácteos', precio: 4.80 },
-            { id: 6, nombre: 'Yogurt Gloria', categoria: 'Lácteos', precio: 2.50 }
-          ],
-          categorias_seleccionadas: [],
-          activo: true,
-          fecha_creacion: '2024-11-20T14:30:00.000Z'
-        }
-      ];
-      setDescuentos(descuentosEjemplo);
-      localStorage.setItem('descuentos_sivi', JSON.stringify(descuentosEjemplo));
-    }
+    cargarDescuentos();
+    cargarEstadisticas();
   }, []);
 
-  // Guardar descuentos en localStorage
+  const cargarDescuentos = async () => {
+    try {
+      setCargando(true);
+      const data = await descuentosService.getAll();
+      setDescuentos(data);
+      console.log('✅ Descuentos cargados desde el backend:', data.length);
+    } catch (error) {
+      console.error('❌ Error al cargar descuentos del backend, usando localStorage:', error);
+      // Fallback a localStorage
+      const descuentosGuardados = localStorage.getItem('descuentos_sivi');
+      if (descuentosGuardados) {
+        setDescuentos(JSON.parse(descuentosGuardados));
+      } else {
+        // Datos de ejemplo
+        const descuentosEjemplo = [
+          {
+            id: 1,
+            nombre: 'Descuento Navideño',
+            descripcion: 'Promoción especial por Navidad',
+            tipo_aplicacion: 'categoria',
+            tipo_descuento: 'porcentaje',
+            valor: 15,
+            fecha_inicio: '2024-12-01',
+            fecha_fin: '2024-12-31',
+            productos_seleccionados: [],
+            categorias_seleccionadas: [
+              { id: 'bebidas', nombre: 'Bebidas', productos_count: 15 },
+              { id: 'snacks', nombre: 'Snacks', productos_count: 23 }
+            ],
+            activo: true,
+            fecha_creacion: '2024-11-15T10:00:00.000Z'
+          },
+          {
+            id: 2,
+            nombre: 'Productos Lácteos',
+            descripcion: 'Descuento en productos lácteos seleccionados',
+            tipo_aplicacion: 'producto',
+            tipo_descuento: 'monto_fijo',
+            valor: 2.50,
+            fecha_inicio: '2024-12-15',
+            fecha_fin: '2025-01-15',
+            productos_seleccionados: [
+              { id: 3, nombre: 'Leche Gloria 1L', categoria: 'Lácteos', precio: 4.80 },
+              { id: 6, nombre: 'Yogurt Gloria', categoria: 'Lácteos', precio: 2.50 }
+            ],
+            categorias_seleccionadas: [],
+            activo: true,
+            fecha_creacion: '2024-11-20T14:30:00.000Z'
+          }
+        ];
+        setDescuentos(descuentosEjemplo);
+        localStorage.setItem('descuentos_sivi', JSON.stringify(descuentosEjemplo));
+      }
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const cargarEstadisticas = async () => {
+    try {
+      const stats = await descuentosService.getEstadisticas();
+      setEstadisticas(stats);
+      console.log('✅ Estadísticas cargadas desde el backend');
+    } catch (error) {
+      console.warn('⚠️ Error al cargar estadísticas del backend, calculando localmente:', error);
+      // Calcular estadísticas localmente como fallback
+      calcularEstadisticasLocales();
+    }
+  };
+
+  const calcularEstadisticasLocales = () => {
+    const stats = {
+      activos: descuentos.filter(d => d.activo && new Date(d.fecha_fin) >= new Date()).length,
+      productosConDescuento: descuentos.reduce((total, d) => {
+        if (d.tipo_aplicacion === 'producto') {
+          return total + d.productos_seleccionados.length;
+        } else {
+          return total + d.categorias_seleccionadas.reduce((sum, cat) => sum + cat.productos_count, 0);
+        }
+      }, 0),
+      ahorroTotal: descuentos.reduce((total, d) => {
+        if (d.tipo_descuento === 'monto_fijo') {
+          return total + parseFloat(d.valor) * 10; // Estimación
+        }
+        return total + 50; // Estimación para porcentajes
+      }, 0),
+      proximosVencer: descuentos.filter(d => {
+        const fechaFin = new Date(d.fecha_fin);
+        const hoy = new Date();
+        const diasRestantes = (fechaFin - hoy) / (1000 * 60 * 60 * 24);
+        return diasRestantes <= 7 && diasRestantes > 0;
+      }).length
+    };
+    setEstadisticas(stats);
+  };
+
+  // Guardar descuentos en localStorage (fallback)
   const guardarDescuentos = (nuevosDescuentos) => {
     setDescuentos(nuevosDescuentos);
     localStorage.setItem('descuentos_sivi', JSON.stringify(nuevosDescuentos));
@@ -72,51 +134,62 @@ const Descuentos = () => {
     setModalDescuentoOpen(true);
   };
 
-  const handleGuardarDescuento = (descuentoData) => {
-    if (descuentoSeleccionado) {
-      // Editar descuento existente
-      const nuevosDescuentos = descuentos.map(d => 
-        d.id === descuentoSeleccionado.id ? descuentoData : d
-      );
-      guardarDescuentos(nuevosDescuentos);
-    } else {
-      // Crear nuevo descuento
-      const nuevosDescuentos = [...descuentos, descuentoData];
-      guardarDescuentos(nuevosDescuentos);
+  const handleGuardarDescuento = async (descuentoData) => {
+    try {
+      if (descuentoSeleccionado) {
+        // Editar descuento existente
+        const descuentoActualizado = await descuentosService.update(
+          descuentoSeleccionado.id, 
+          descuentoData
+        );
+        const nuevosDescuentos = descuentos.map(d => 
+          d.id === descuentoSeleccionado.id ? descuentoActualizado : d
+        );
+        setDescuentos(nuevosDescuentos);
+        console.log('✅ Descuento actualizado en el backend');
+      } else {
+        // Crear nuevo descuento
+        const nuevoDescuento = await descuentosService.create(descuentoData);
+        setDescuentos([...descuentos, nuevoDescuento]);
+        console.log('✅ Descuento creado en el backend');
+      }
+      // Recargar estadísticas
+      cargarEstadisticas();
+    } catch (error) {
+      console.error('❌ Error al guardar descuento en el backend, usando localStorage:', error);
+      // Fallback a localStorage
+      if (descuentoSeleccionado) {
+        const nuevosDescuentos = descuentos.map(d => 
+          d.id === descuentoSeleccionado.id ? descuentoData : d
+        );
+        guardarDescuentos(nuevosDescuentos);
+      } else {
+        const nuevosDescuentos = [...descuentos, descuentoData];
+        guardarDescuentos(nuevosDescuentos);
+      }
+      calcularEstadisticasLocales();
     }
     setModalDescuentoOpen(false);
     setDescuentoSeleccionado(null);
   };
 
-  const handleEliminarDescuento = (id) => {
+  const handleEliminarDescuento = async (id) => {
     if (window.confirm('¿Está seguro de que desea eliminar este descuento?')) {
-      const nuevosDescuentos = descuentos.filter(d => d.id !== id);
-      guardarDescuentos(nuevosDescuentos);
+      try {
+        await descuentosService.delete(id);
+        const nuevosDescuentos = descuentos.filter(d => d.id !== id);
+        setDescuentos(nuevosDescuentos);
+        console.log('✅ Descuento eliminado del backend');
+        // Recargar estadísticas
+        cargarEstadisticas();
+      } catch (error) {
+        console.error('❌ Error al eliminar descuento del backend, usando localStorage:', error);
+        // Fallback a localStorage
+        const nuevosDescuentos = descuentos.filter(d => d.id !== id);
+        guardarDescuentos(nuevosDescuentos);
+        calcularEstadisticasLocales();
+      }
     }
-  };
-
-  // Calcular estadísticas
-  const estadisticas = {
-    activos: descuentos.filter(d => d.activo && new Date(d.fecha_fin) >= new Date()).length,
-    productosConDescuento: descuentos.reduce((total, d) => {
-      if (d.tipo_aplicacion === 'producto') {
-        return total + d.productos_seleccionados.length;
-      } else {
-        return total + d.categorias_seleccionadas.reduce((sum, cat) => sum + cat.productos_count, 0);
-      }
-    }, 0),
-    ahorroTotal: descuentos.reduce((total, d) => {
-      if (d.tipo_descuento === 'monto_fijo') {
-        return total + parseFloat(d.valor) * 10; // Estimación
-      }
-      return total + 50; // Estimación para porcentajes
-    }, 0),
-    proximosVencer: descuentos.filter(d => {
-      const fechaFin = new Date(d.fecha_fin);
-      const hoy = new Date();
-      const diasRestantes = (fechaFin - hoy) / (1000 * 60 * 60 * 24);
-      return diasRestantes <= 7 && diasRestantes > 0;
-    }).length
   };
 
   // Filtrar descuentos según estado
@@ -147,6 +220,18 @@ const Descuentos = () => {
     if (fechaInicio > hoy) return { estado: 'Próximo', clase: 'bg-yellow-100 text-yellow-800' };
     return { estado: 'Activo', clase: 'bg-green-100 text-green-800' };
   };
+  
+  if (cargando) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando descuentos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
