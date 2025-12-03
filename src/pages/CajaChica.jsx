@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Search, Calendar, Clock, FileText, ShoppingCart, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import PaginacionTabla from '../components/PaginacionTabla';
+import ventasService from '../services/ventasService';
 
 const CajaChica = () => {
   const { user } = useAuth();
@@ -21,33 +22,65 @@ const CajaChica = () => {
     ventasYape: 0
   });
 
-  // Cargar ventas del localStorage al montar el componente
+  // Cargar ventas del backend o localStorage
   useEffect(() => {
-    const ventasGuardadas = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-    // Filtrar solo las ventas del usuario actual
-    const ventasUsuario = ventasGuardadas.filter(venta => 
-      venta.vendedor === (user?.username || '')
-    );
-    
-    // Ordenar por fecha más reciente primero
-    const ventasOrdenadas = ventasUsuario.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    
-    setVentas(ventasOrdenadas);
-    setVentasFiltradas(ventasOrdenadas);
-    
-    // Calcular estadísticas
-    const stats = {
-      totalVentas: ventasOrdenadas.length,
-      totalMonto: ventasOrdenadas.reduce((sum, v) => sum + v.total, 0),
-      ventasEfectivo: ventasOrdenadas.filter(v => v.metodoPago === 'Efectivo').length,
-      ventasTarjeta: ventasOrdenadas.filter(v => v.metodoPago === 'Tarjeta').length,
-      ventasYape: ventasOrdenadas.filter(v => v.metodoPago === 'Yape/Plin').length
-    };
-    setEstadisticas(stats);
+    cargarVentas();
   }, [user]);
 
+  const cargarVentas = async () => {
+    if (!user?.id_usuario && !user?.idUsuario) return;
+    
+    const userId = user.id_usuario || user.idUsuario;
+    
+    try {
+      // Cargar ventas y estadísticas del backend
+      const [ventasData, statsData] = await Promise.all([
+        ventasService.getByVendedor(userId),
+        ventasService.getEstadisticasVendedor(userId)
+      ]);
+      
+      // Ordenar por fecha más reciente primero
+      const ventasOrdenadas = ventasData.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      
+      setVentas(ventasOrdenadas);
+      setVentasFiltradas(ventasOrdenadas);
+      
+      // Usar estadísticas del backend
+      setEstadisticas({
+        totalVentas: statsData.totalVentas || 0,
+        totalMonto: statsData.montoTotal || 0,
+        ventasEfectivo: 0, // El backend no devuelve esto aún
+        ventasTarjeta: 0,
+        ventasYape: 0
+      });
+      
+    } catch (error) {
+      console.warn('⚠️ Error al cargar ventas del backend, usando localStorage:', error);
+      
+      // Fallback a localStorage
+      const ventasGuardadas = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
+      const ventasUsuario = ventasGuardadas.filter(venta => 
+        venta.vendedor === user.username
+      );
+      
+      const ventasOrdenadas = ventasUsuario.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      
+      setVentas(ventasOrdenadas);
+      setVentasFiltradas(ventasOrdenadas);
+      
+      const stats = {
+        totalVentas: ventasOrdenadas.length,
+        totalMonto: ventasOrdenadas.reduce((sum, v) => sum + v.total, 0),
+        ventasEfectivo: ventasOrdenadas.filter(v => v.metodoPago === 'Efectivo').length,
+        ventasTarjeta: ventasOrdenadas.filter(v => v.metodoPago === 'Tarjeta').length,
+        ventasYape: ventasOrdenadas.filter(v => v.metodoPago === 'Yape/Plin').length
+      };
+      setEstadisticas(stats);
+    }
+  };
+
   // Función para aplicar filtros manualmente
-  const aplicarFiltros = () => {
+  const aplicarFiltros = async () => {
     // Validar que la fecha "Desde" no sea mayor que "Hasta"
     if (filtroFechaTemp && filtroFechaHastaTemp) {
       const fechaDesde = new Date(filtroFechaTemp);
@@ -59,30 +92,50 @@ const CajaChica = () => {
       }
     }
     
-    let filtradas = [...ventas];
-    
-    if (filtroFechaTemp) {
-      const fechaInicio = new Date(filtroFechaTemp);
-      fechaInicio.setHours(0, 0, 0, 0); // Establecer hora a 00:00:00
-      filtradas = filtradas.filter(venta => {
-        const fechaVenta = new Date(venta.fecha);
-        return fechaVenta >= fechaInicio;
-      });
+    try {
+      // Intentar filtrar desde el backend
+      const ventasData = await ventasService.getByFecha(
+        filtroFechaTemp || null, 
+        filtroFechaHastaTemp || null
+      );
+      
+      // Filtrar por vendedor actual
+      const ventasVendedor = ventasData.filter(v => v.vendedor === user?.username);
+      
+      setVentasFiltradas(ventasVendedor);
+      setFiltroFecha(filtroFechaTemp);
+      setFiltroFechaHasta(filtroFechaHastaTemp);
+      setCurrentPage(1);
+      
+    } catch (error) {
+      console.warn('⚠️ Error al filtrar en backend, filtrando localmente:', error);
+      
+      // Fallback: filtrar localmente
+      let filtradas = [...ventas];
+      
+      if (filtroFechaTemp) {
+        const fechaInicio = new Date(filtroFechaTemp);
+        fechaInicio.setHours(0, 0, 0, 0);
+        filtradas = filtradas.filter(venta => {
+          const fechaVenta = new Date(venta.fecha);
+          return fechaVenta >= fechaInicio;
+        });
+      }
+      
+      if (filtroFechaHastaTemp) {
+        const fechaFin = new Date(filtroFechaHastaTemp);
+        fechaFin.setHours(23, 59, 59, 999);
+        filtradas = filtradas.filter(venta => {
+          const fechaVenta = new Date(venta.fecha);
+          return fechaVenta <= fechaFin;
+        });
+      }
+      
+      setVentasFiltradas(filtradas);
+      setFiltroFecha(filtroFechaTemp);
+      setFiltroFechaHasta(filtroFechaHastaTemp);
+      setCurrentPage(1);
     }
-    
-    if (filtroFechaHastaTemp) {
-      const fechaFin = new Date(filtroFechaHastaTemp);
-      fechaFin.setHours(23, 59, 59, 999); // Establecer hora a 23:59:59
-      filtradas = filtradas.filter(venta => {
-        const fechaVenta = new Date(venta.fecha);
-        return fechaVenta <= fechaFin;
-      });
-    }
-    
-    setVentasFiltradas(filtradas);
-    setFiltroFecha(filtroFechaTemp);
-    setFiltroFechaHasta(filtroFechaHastaTemp);
-    setCurrentPage(1); // Reset página al filtrar
   };
 
   // Limpiar filtros
@@ -323,12 +376,14 @@ const CajaChica = () => {
               </thead>
               <tbody className="divide-y" style={{ borderColor: '#CCCCCC' }}>
                 {ventasPagina.map((venta) => {
-                  const resumenProductos = venta.productos.length <= 3 
-                    ? venta.productos 
-                    : [...venta.productos.slice(0, 2), { nombre: `+${venta.productos.length - 2} productos más`, esResumen: true }];
+                  // Manejar diferentes estructuras de respuesta del backend
+                  const productos = venta.productos || venta.detalles || [];
+                  const resumenProductos = productos.length <= 3 
+                    ? productos 
+                    : [...productos.slice(0, 2), { nombre: `+${productos.length - 2} productos más`, esResumen: true }];
                   
                   return (
-                    <tr key={venta.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={venta.id || venta.idVenta} className="hover:bg-gray-50 transition-colors">
                       {/* Columna Venta */}
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
@@ -343,14 +398,14 @@ const CajaChica = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-sm truncate" style={{ color: '#000000' }}>
-                              #{venta.id.toString().slice(-6)}
+                              #{(venta.id || venta.idVenta || '').toString().slice(-6)}
                             </p>
                             <p className="text-xs" style={{ color: getColorMetodoPago(venta.metodoPago) }}>
-                              {venta.metodoPago}
+                              {venta.metodoPago || 'N/A'}
                             </p>
-                            {venta.cliente !== 'Sin registro' && (
+                            {venta.cliente && (typeof venta.cliente === 'string' ? venta.cliente : venta.cliente.nombres || venta.cliente.dni) !== 'Sin registro' && (
                               <p className="text-xs mt-0.5 px-1.5 py-0.5 rounded inline-block" style={{ backgroundColor: '#F9F9F9', color: '#633416' }}>
-                                {venta.cliente}
+                                {typeof venta.cliente === 'string' ? venta.cliente : venta.cliente.nombres || venta.cliente.dni || 'Cliente'}
                               </p>
                             )}
                           </div>
@@ -386,20 +441,20 @@ const CajaChica = () => {
                                 color: producto.esResumen ? '#666666' : '#000000',
                                 maxWidth: '120px'
                               }}>
-                                {producto.nombre}
+                                {producto.nombre || producto.nombreProducto || 'Producto'}
                               </span>
                               {!producto.esResumen && (
                                 <div className="flex items-center gap-1 text-xs flex-shrink-0">
-                                  <span style={{ color: '#666666' }}>x{producto.cantidad}</span>
+                                  <span style={{ color: '#666666' }}>x{producto.cantidad || 0}</span>
                                   <span className="font-semibold" style={{ color: '#3F7416' }}>
-                                    S/ {producto.total.toFixed(2)}
+                                    S/ {(producto.total || producto.precio * producto.cantidad || 0).toFixed(2)}
                                   </span>
                                 </div>
                               )}
                             </div>
                           ))}
                           <div className="text-xs pt-1 border-t" style={{ borderColor: '#CCCCCC', color: '#666666' }}>
-                            Total: {venta.productos.length} producto{venta.productos.length !== 1 ? 's' : ''}
+                            Total: {productos.length} producto{productos.length !== 1 ? 's' : ''}
                           </div>
                         </div>
                       </td>
@@ -408,12 +463,12 @@ const CajaChica = () => {
                       <td className="px-3 py-3 text-center">
                         <div className="space-y-0.5 text-xs">
                           <div style={{ color: '#666666' }}>
-                            S/ {venta.subtotal.toFixed(2)}
+                            S/ {(venta.subtotal || 0).toFixed(2)}
                           </div>
                           <div style={{ color: '#666666' }}>
-                            S/ {venta.igv.toFixed(2)}
+                            S/ {(venta.igv || 0).toFixed(2)}
                           </div>
-                          {venta.descuentos > 0 && (
+                          {venta.descuentos && venta.descuentos > 0 && (
                             <div style={{ color: '#ff6b6b' }}>
                               -S/ {venta.descuentos.toFixed(2)}
                             </div>
@@ -424,7 +479,7 @@ const CajaChica = () => {
                       {/* Columna Total */}
                       <td className="px-3 py-3 text-right">
                         <p className="text-lg font-bold" style={{ color: '#3F7416' }}>
-                          S/ {venta.total.toFixed(2)}
+                          S/ {(venta.total || 0).toFixed(2)}
                         </p>
                       </td>
                     </tr>
