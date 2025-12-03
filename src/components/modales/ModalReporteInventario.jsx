@@ -10,6 +10,7 @@ import {
   Archive,
   List
 } from 'lucide-react';
+import reportesService from '../../services/reportesService';
 
 const getPresetDates = (preset) => {
   const end = new Date();
@@ -21,7 +22,7 @@ const getPresetDates = (preset) => {
   return { fechaInicio: toISODate(start), fechaFin: toISODate(end) };
 };
 
-const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
+const ModalReporteInventario = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     tipoReporte: 'stock_actual',
     categoriaId: 'todas',
@@ -31,11 +32,12 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
   });
   
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      const today = getPresetDates('today');
+      const today = getPresetDates('month');
       setFormData({
         tipoReporte: 'stock_actual',
         categoriaId: 'todas',
@@ -44,6 +46,7 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
         tipoFormato: 'pdf'
       });
       setErrors({});
+      setSuccessMessage('');
       setIsLoading(false);
     }
   }, [isOpen]);
@@ -54,6 +57,7 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+    if (errors.form) setErrors(prev => ({ ...prev, form: null }));
   };
   
   const handleSetPreset = (preset) => {
@@ -82,17 +86,24 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage('');
+    
     try {
       const opciones = { ...formData };
       if (opciones.tipoReporte === 'stock_actual') {
         delete opciones.fechaInicio;
         delete opciones.fechaFin;
       }
-      await onGenerate(opciones); 
+      await reportesService.generarReporteInventario(opciones);
+      
+      setSuccessMessage('Reporte generado y descargado con éxito.');
+      
     } catch (error) {
       console.error("Error al generar reporte:", error);
-      setErrors({ form: 'No se pudo generar el reporte. Intente de nuevo.' });
+      setErrors({ form: error.message || 'No se pudo generar el reporte. Intente de nuevo.' });
     } finally {
       setIsLoading(false);
     }
@@ -119,15 +130,13 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
         className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform animate-scale-in"
         onClick={(e) => e.stopPropagation()} 
       >
-        
-        {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold" style={{ color: PRIMARY_GREEN }}>
-              Generar Reporte de Inventario
+              Reportes de Inventario
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Selecciona las opciones para tu reporte de inventario.
+              Stock actual, historial de movimientos y valoración.
             </p>
           </div>
           <button
@@ -138,91 +147,72 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-
           <div>
             <label className="block text-base font-semibold mb-3 text-gray-600">
               <Archive className="w-5 h-5 inline mr-2" />
               Tipo de Reporte
             </label>
-            <select
-              name="tipoReporte"
-              value={formData.tipoReporte}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 bg-white"
-              disabled={isLoading}
-            >
-              <option value="stock_actual">Stock Actual</option>
-              <option value="movimientos">Historial de Movimientos</option>
-            </select>
-          </div>
-
-          <div className={`space-y-4 ${mostrarFechas ? 'animate-fade-in' : 'hidden'}`}>
-            <label className="block text-base font-semibold text-gray-600">
-              <Calendar className="w-5 h-5 inline mr-2" />
-              Rango de Fechas (para Movimientos)
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['7days', '30days', 'month'].map(preset => (
-                  <button 
-                    key={preset}
-                    type="button" 
-                    onClick={() => handleSetPreset(preset)} 
-                    className="px-3 py-1 text-xs font-medium bg-gray-100 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
-                  >
-                    {preset === '7days' ? 'Últimos 7 días' : preset === '30days' ? 'Últimos 30 días' : 'Este Mes'}
-                  </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="fechaInicioInv" className="block text-sm font-medium mb-1 text-gray-600">Desde *</label>
-                <input
-                  type="date"
-                  id="fechaInicioInv"
-                  name="fechaInicio"
-                  value={formData.fechaInicio}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
-                  disabled={isLoading}
-                />
-                {errors.fechaInicio && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.fechaInicio}</p>}
-              </div>
-              <div>
-                <label htmlFor="fechaFinInv" className="block text-sm font-medium mb-1 text-gray-600">Hasta *</label>
-                <input
-                  type="date"
-                  id="fechaFinInv"
-                  name="fechaFin"
-                  value={formData.fechaFin}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
-                  disabled={isLoading}
-                />
-                {errors.fechaFin && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.fechaFin}</p>}
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+                <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({...prev, tipoReporte: 'stock_actual'}))}
+                    className={`p-3 border rounded-lg text-center transition-all ${formData.tipoReporte === 'stock_actual' ? 'bg-green-50 border-green-600 text-green-800 font-medium ring-1 ring-green-600' : 'hover:bg-gray-50'}`}
+                >
+                    Stock Actual
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({...prev, tipoReporte: 'movimientos'}))}
+                    className={`p-3 border rounded-lg text-center transition-all ${formData.tipoReporte === 'movimientos' ? 'bg-green-50 border-green-600 text-green-800 font-medium ring-1 ring-green-600' : 'hover:bg-gray-50'}`}
+                >
+                    Movimientos
+                </button>
             </div>
           </div>
-
-          <div>
-            <label className="block text-base font-semibold mb-3 text-gray-600">
-              <List className="w-5 h-5 inline mr-2" />
-              Filtrar por Categoría
-            </label>
-            <select
-              name="categoriaId"
-              value={formData.categoriaId}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 bg-white"
-              disabled={isLoading}
-            >
-              <option value="todas">Todas las categorías</option>
-              <option value="1">Bebidas</option>
-              <option value="2">Abarrotes</option>
-              <option value="3">Limpieza</option>
-            </select>
-          </div>
+          {mostrarFechas && (
+            <div className="space-y-4 animate-fade-in bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Rango de Fechas
+                    </label>
+                    <div className="flex gap-2">
+                        <button type="button" onClick={() => handleSetPreset('7days')} className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100">7 días</button>
+                        <button type="button" onClick={() => handleSetPreset('month')} className="px-2 py-1 text-xs bg-white border rounded hover:bg-gray-100">Mes</button>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="fechaInicioInv" className="block text-xs font-medium mb-1 text-gray-500">Desde</label>
+                    <input
+                    type="date"
+                    id="fechaInicioInv"
+                    name="fechaInicio"
+                    value={formData.fechaInicio}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 bg-white"
+                    disabled={isLoading}
+                    />
+                    {errors.fechaInicio && <p className="text-red-500 text-xs mt-1">{errors.fechaInicio}</p>}
+                </div>
+                <div>
+                    <label htmlFor="fechaFinInv" className="block text-xs font-medium mb-1 text-gray-500">Hasta</label>
+                    <input
+                    type="date"
+                    id="fechaFinInv"
+                    name="fechaFin"
+                    value={formData.fechaFin}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 bg-white"
+                    disabled={isLoading}
+                    />
+                    {errors.fechaFin && <p className="text-red-500 text-xs mt-1">{errors.fechaFin}</p>}
+                </div>
+                </div>
+            </div>
+          )}
           <div>
             <label className="block text-base font-semibold mb-3 text-gray-600">
               <Filter className="w-5 h-5 inline mr-2" />
@@ -235,13 +225,13 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
                 disabled={isLoading}
                 style={{ 
                   borderColor: formData.tipoFormato === 'pdf' ? PRIMARY_GREEN : '#e5e7eb',
-                  backgroundColor: formData.tipoFormato === 'pdf' ? '#f0fdf4' : 'white'
+                  backgroundColor: formData.tipoFormato === 'pdf' ? '#f0fdf4' : 'white',
+                  color: formData.tipoFormato === 'pdf' ? PRIMARY_GREEN : '#4b5563'
                 }}
-                className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg transition-all hover:bg-gray-50
-                            ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="flex items-center justify-center p-3 border rounded-lg gap-2 transition-all hover:shadow-sm"
               >
-                <FileText className="w-10 h-10" style={{ color: formData.tipoFormato === 'pdf' ? PRIMARY_GREEN : '#9ca3af' }} />
-                <span className="mt-2 font-medium" style={{ color: formData.tipoFormato === 'pdf' ? PRIMARY_GREEN : '#374151' }}>PDF</span>
+                <FileText className="w-5 h-5" />
+                <span className="font-medium">PDF</span>
               </button>
               <button
                 type="button"
@@ -249,24 +239,34 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
                 disabled={isLoading}
                 style={{ 
                   borderColor: formData.tipoFormato === 'excel' ? PRIMARY_GREEN : '#e5e7eb',
-                  backgroundColor: formData.tipoFormato === 'excel' ? '#f0fdf4' : 'white'
+                  backgroundColor: formData.tipoFormato === 'excel' ? '#f0fdf4' : 'white',
+                  color: formData.tipoFormato === 'excel' ? PRIMARY_GREEN : '#4b5563'
                 }}
-                className={`flex flex-col items-center justify-center p-6 border-2 rounded-lg transition-all hover:bg-gray-50
-                            ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="flex items-center justify-center p-3 border rounded-lg gap-2 transition-all hover:shadow-sm"
               >
-                <FileSpreadsheet className="w-10 h-10" style={{ color: formData.tipoFormato === 'excel' ? PRIMARY_GREEN : '#9ca3af' }} />
-                <span className="mt-2 font-medium" style={{ color: formData.tipoFormato === 'excel' ? PRIMARY_GREEN : '#374151' }}>Excel (.xlsx)</span>
+                <FileSpreadsheet className="w-5 h-5" />
+                <span className="font-medium">Excel</span>
               </button>
             </div>
           </div>
+
+          {errors.form && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center justify-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {errors.form}
+            </div>
+          )}
           
-          {errors.form && <p className="text-red-500 text-sm text-center flex items-center gap-2 justify-center"><AlertCircle className="w-4 h-4" /> {errors.form}</p>}
+          {successMessage && (
+            <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center justify-center gap-2">
+                <FileDown className="w-4 h-4" /> {successMessage}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
               disabled={isLoading}
             >
               Cancelar
@@ -276,20 +276,19 @@ const ModalReporteInventario = ({ isOpen, onClose, onGenerate }) => {
               disabled={isLoading}
               style={{ backgroundColor: isLoading ? '#CCCCCC' : PRIMARY_GREEN }}
               className={`
-                px-5 py-2.5 text-white rounded-lg transition-colors flex items-center gap-2
-                hover:opacity-90
-                ${isLoading ? 'cursor-not-allowed' : ''}
+                px-5 py-2.5 text-white rounded-lg transition-colors flex items-center gap-2 font-medium text-sm shadow-sm
+                ${isLoading ? 'cursor-not-allowed' : 'hover:opacity-90'}
               `}
             >
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Generando...
+                  Procesando...
                 </>
               ) : (
                 <>
                   <FileDown className="w-4 h-4" />
-                  Generar Reporte
+                  Descargar Reporte
                 </>
               )}
             </button>
