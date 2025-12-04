@@ -8,13 +8,10 @@ import TablaProductos from '../components/TablaProductos';
 import ComprobantePago from '../components/ComprobantePago';
 import ventasService from '../services/ventasService';
 import inventarioService from '../services/inventarioService';
-import descuentosService from '../services/descuentosService';
+import { ofertasService } from '../services';
 import clientesService from '../services/clientesService';
-<<<<<<< HEAD
-=======
 import productosService from '../services/productosService';
 import { generarTicketPDF } from '../utils/generarTicketPDF';
->>>>>>> master
 
 const Ventas = () => {
   const { data: database, updateInventario } = useDatabase();
@@ -34,12 +31,9 @@ const Ventas = () => {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [aplicaDescuentoFidelidad, setAplicaDescuentoFidelidad] = useState(false);
   const [porcentajeDescuentoFidelidad, setPorcentajeDescuentoFidelidad] = useState(0);
-<<<<<<< HEAD
-=======
   const [ventaCreadaData, setVentaCreadaData] = useState(null);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
->>>>>>> master
   
   // Estados adicionales para descuentos automáticos
   const [mostrarDescuentoFidelidad, setMostrarDescuentoFidelidad] = useState(false);
@@ -66,68 +60,61 @@ const Ventas = () => {
   // Función para obtener descuentos activos desde el backend
   const obtenerDescuentosActivos = async () => {
     try {
-      const descuentos = await descuentosService.getActivos();
-      return descuentos;
+      const ofertas = await ofertasService.getVigentes();
+      return ofertas;
     } catch (error) {
-      console.warn('⚠️ Error al obtener descuentos del backend, usando localStorage:', error);
-      // Fallback a localStorage
-      const descuentosGuardados = localStorage.getItem('descuentos_sivi');
-      if (!descuentosGuardados) return [];
-      
-      const descuentos = JSON.parse(descuentosGuardados);
-      const hoy = new Date();
-      
-      return descuentos.filter(descuento => {
-        const fechaInicio = new Date(descuento.fecha_inicio);
-        const fechaFin = new Date(descuento.fecha_fin);
-        return descuento.activo && fechaInicio <= hoy && fechaFin >= hoy;
-      });
+      console.warn('⚠️ Error al obtener ofertas del backend:', error);
+      return [];
     }
   };
 
-  // Función para aplicar descuentos a productos
+  // Función para aplicar descuentos a productos usando el endpoint
   const aplicarDescuentosAProductos = async (productos) => {
-    const descuentosActivos = await obtenerDescuentosActivos();
-    
-    return productos.map(producto => {
-      let descuentoAplicable = null;
-      let descuentoValor = 0;
-      
-      // Buscar descuentos aplicables
-      for (const descuento of descuentosActivos) {
-        let aplicaDescuento = false;
-        
-        if (descuento.tipo_aplicacion === 'producto') {
-          // Descuento por producto específico
-          aplicaDescuento = descuento.productos_seleccionados.some(p => p.id === producto.idProducto);
-        } else if (descuento.tipo_aplicacion === 'categoria') {
-          // Descuento por categoría
-          aplicaDescuento = descuento.categorias_seleccionadas.some(cat => 
-            cat.nombre.toLowerCase() === (producto.categoria || '').toLowerCase()
-          );
-        }
-        
-        if (aplicaDescuento) {
-          if (descuento.tipo_descuento === 'porcentaje') {
-            descuentoValor = Math.max(descuentoValor, parseFloat(descuento.valor));
-          } else {
-            descuentoValor = Math.max(descuentoValor, parseFloat(descuento.valor));
-          }
-          descuentoAplicable = descuento;
-        }
-      }
-      
-      return {
-        ...producto,
-        descuento: descuentoAplicable,
-        descuento_valor: descuentoValor,
-        precio_con_descuento: descuentoAplicable ? 
-          (descuentoAplicable.tipo_descuento === 'porcentaje' ? 
-            producto.precio_venta * (1 - descuentoValor / 100) :
-            Math.max(0, producto.precio_venta - descuentoValor)
-          ) : producto.precio_venta
-      };
-    });
+    try {
+      // Preparar datos para el endpoint calcular-descuentos
+      const productosParaCalculo = productos.map(p => ({
+        id_producto: p.idProducto || p.id_producto,
+        id_categoria: p.id_cat,
+        cantidad: 1, // Solo para obtener descuento, la cantidad se aplica después
+        precio_unitario: p.precio_venta
+      }));
+
+      // Llamar al endpoint para calcular descuentos
+      const resultado = await ventasService.calcularDescuentos({
+        productos: productosParaCalculo
+      });
+
+      console.log('💰 Descuentos calculados:', resultado);
+
+      // Mapear resultado a productos
+      return productos.map((producto, index) => {
+        const productoConDescuento = resultado.productos[index];
+        const ofertaAplicada = productoConDescuento?.oferta_aplicada;
+
+        return {
+          ...producto,
+          descuento: ofertaAplicada ? {
+            id_oferta: ofertaAplicada.id_oferta,
+            nombre: ofertaAplicada.descripcion,
+            tipo: ofertaAplicada.tipo,
+            tipo_descuento: 'porcentaje'
+          } : null,
+          descuento_valor: ofertaAplicada?.descuento_porcentaje || 0,
+          precio_con_descuento: ofertaAplicada 
+            ? producto.precio_venta * (1 - ofertaAplicada.descuento_porcentaje / 100)
+            : producto.precio_venta
+        };
+      });
+    } catch (error) {
+      console.error('❌ Error al calcular descuentos:', error);
+      // Si falla, devolver productos sin descuento
+      return productos.map(p => ({
+        ...p,
+        descuento: null,
+        descuento_valor: 0,
+        precio_con_descuento: p.precio_venta
+      }));
+    }
   };
 
   // Cargar productos desde la API
@@ -151,29 +138,6 @@ const Ventas = () => {
         }
       });
 
-<<<<<<< HEAD
-  // Cargar y aplicar descuentos cuando cambie la base de datos
-  useEffect(() => {
-    const cargarDescuentos = async () => {
-      if (productos.length > 0) {
-        const productosConDesc = await aplicarDescuentosAProductos(productos);
-        setProductosConDescuento(productosConDesc);
-      }
-    };
-    
-    cargarDescuentos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [database]);
-
-  // Filtrar productos por búsqueda
-  const productosFiltrados = productosConDescuento.filter(producto => {
-    return (
-      producto.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producto.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      producto.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-=======
       // Transformar estructura de API a estructura esperada
       const productosFormateados = productos
         .filter(p => p.habilitado)
@@ -330,7 +294,6 @@ const Ventas = () => {
 
   // Filtrar productos por búsqueda
   const productosFiltrados = productosConDescuento;
->>>>>>> master
 
   // Seleccionar producto para agregar
   const seleccionarProducto = (producto) => {
@@ -435,11 +398,7 @@ const Ventas = () => {
       // Preparar datos de venta
       const ventaData = {
         idUsuario: user?.id_usuario || user?.idUsuario,
-<<<<<<< HEAD
-        idCliente: clienteSeleccionado?.idCliente || null,
-=======
         idCliente: clienteSeleccionado?.idCliente || clienteSeleccionado?.id || null,
->>>>>>> master
         descuentoTotal: descuentoFidelidadMonto + descuentoProductos,
         subtotal: subtotal,
         igv: igv,
@@ -447,7 +406,7 @@ const Ventas = () => {
         detalles: productosVenta.map(p => {
           return {
             idProducto: p.id_producto,
-            idOferta: null,
+            idOferta: p.descuento?.id_oferta || null, // ✅ Incluir id_oferta
             descuentoItem: p.descuento_valor || 0,
             precio: p.precio_venta,
             cantidad: p.cantidad
@@ -462,12 +421,9 @@ const Ventas = () => {
       
       console.log('✅ Venta procesada exitosamente:', ventaCreada);
       
-<<<<<<< HEAD
-=======
       // Guardar datos de la venta creada para el ticket
       setVentaCreadaData(ventaCreada);
       
->>>>>>> master
       // Actualizar stock localmente para sincronización inmediata
       const inventarioActualizado = { ...database };
       productosVenta.forEach(producto => {
@@ -571,22 +527,14 @@ const Ventas = () => {
   };
 
   const guardarCliente = async (cliente) => {
-<<<<<<< HEAD
-=======
     console.log('Cliente seleccionado:', cliente);
->>>>>>> master
     setClienteDNI(cliente.dni || cliente.numeroDocumento);
     setClienteSeleccionado(cliente);
     setShowClienteModal(false);
     
     // Verificar descuento de fidelidad
-<<<<<<< HEAD
-    if (cliente.idCliente) {
-      await verificarDescuentoFidelidad(cliente.idCliente);
-=======
     if (cliente.idCliente || cliente.id) {
       await verificarDescuentoFidelidad(cliente.idCliente || cliente.id);
->>>>>>> master
     }
   };
 
