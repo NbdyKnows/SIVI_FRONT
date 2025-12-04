@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import database from '../data/database.json';
 import PaginacionTabla from '../components/PaginacionTabla';
 import movimientosService from '../services/movimientosService';
-import productosService from '../services/productosService'; // O como se llame tu archivo
+import productosService from '../services/productosService'; 
 
 const MovimientosInventario = () => {
   const navigate = useNavigate();
