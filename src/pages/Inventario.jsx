@@ -1,92 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Package, 
   Search, 
-  Edit3, 
-  Trash2, 
   AlertTriangle,
   TrendingUp,
   Filter,
   PackagePlus
 } from 'lucide-react';
-
-import { useDatabase } from '../hooks/useDatabase';
 import colors from '../styles/colors';
+import inventarioService from '../services/inventarioService';
 
 const Inventario = () => {
   const navigate = useNavigate();
-  const { getInventarioWithProductoAndCategoria } = useDatabase();
+  
+  const [datosBackend, setDatosBackend] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
-  
-  // Obtener datos reales de la BD
-  const inventarioData = getInventarioWithProductoAndCategoria();
-
-  // Formatear datos del inventario real
-  const inventoryItems = inventarioData.map(item => {
-    const getStockStatus = (stock) => {
-      if (stock <= 10) return 'critical';
-      if (stock <= 20) return 'low';
-      return 'normal';
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setCargando(true);
+        const response = await inventarioService.getDetallePanel();
+        console.log('Datos del backend:', response);
+        setDatosBackend(response.data || response);
+      } catch (err) {
+        setError(err.message || 'Error al cargar inventario');
+        console.error('Error:', err);
+      } finally {
+        setCargando(false);
+      }
     };
+    
+    cargarDatos();
+  }, []);
 
+  if (cargando) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-2 text-gray-600">Cargando inventario real...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-medium">Error al cargar inventario</h3>
+          <p className="text-red-600 text-sm mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Formatear datos del backend
+  const inventoryItems = datosBackend.map(item => {
+    // Determinar si requiere atención
+    const requiereAtencion = item.estado_stock === 'Requiere reposición';
+    
     return {
       id: item.id_inventario,
       id_producto: item.id_producto,
-      name: item.producto,
-      category: item.categoria,
-      sku: item.sku,
-      currentStock: item.stock,
-      minStock: 10, // Valor por defecto
-      maxStock: 100, // Valor por defecto
-      price: item.precio,
-      supplier: 'Proveedor General', // Podríamos obtener esto de la BD si está disponible
-      lastUpdated: item.fecha_movimiento || new Date().toISOString(),
-      status: getStockStatus(item.stock),
-      habilitado: item.habilitado
+      name: item.producto || `Producto ${item.id_producto}`,
+      category: 'General',
+      sku: `P${item.id_producto?.toString().padStart(3, '0') || '000'}`,
+      currentStock: item.stock_actual,
+      minStock: item.stock_minimo,
+      price: item.precio_venta,
+      fechaIngreso: item.fecha_ingreso,
+      estadoStock: item.estado_stock,
+      requiereAtencion: requiereAtencion
     };
-  }).filter(item => item.habilitado);
+  });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'critical':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'low':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+  // Función para color del estado
+  const getEstadoColor = (estado) => {
+    switch (estado) {
+      case 'Requiere reposición':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Stock suficiente':
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'critical':
-        return 'Crítico';
-      case 'low':
-        return 'Bajo';
-      default:
-        return 'Normal';
+  // Función para color de stock crítico
+  const getStockColor = (stockActual, stockMinimo) => {
+    if (stockActual <= stockMinimo) {
+      return 'text-red-600 font-bold';
     }
+    return 'text-gray-900';
   };
 
-  // Inventario ahora es solo para visualización
-  // Las funciones de edición/creación están en la página de Gestión de Stock
-
-
-
+  // Filtrar items
   const filteredItems = inventoryItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.sku.toLowerCase().includes(searchTerm.toLowerCase());
+                         item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.estadoStock.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
+  // Estadísticas
   const totalItems = inventoryItems.length;
-  const lowStockItems = inventoryItems.filter(item => item.status === 'low' || item.status === 'critical').length;
-  const totalValue = inventoryItems.reduce((sum, item) => sum + (item.currentStock * item.price), 0);
+  const requiereStockItems = inventoryItems.filter(item => item.requiereAtencion).length;
+  const totalValue = inventoryItems.reduce((sum, item) => sum + (item.currentStock ), 0);
 
   const categories = ['all', ...new Set(inventoryItems.map(item => item.category))];
 
@@ -99,10 +126,10 @@ const Inventario = () => {
             Inventario
           </h1>
           <p className="text-gray-600 mt-1">
-            Visualización y control de productos en inventario
+            {totalItems} productos • {requiereStockItems} requieren atención
           </p>
         </div>
-        <button
+        <button hidden
           onClick={() => navigate('/app/inventario/agregar-stock')}
           className="px-6 py-3 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
           style={{ backgroundColor: colors.primary.green }}
@@ -137,9 +164,9 @@ const Inventario = () => {
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Stock Bajo</p>
+              <p className="text-sm font-medium text-gray-600">Requieren Stock</p>
               <p className="text-2xl font-bold text-red-600">
-                {lowStockItems}
+                {requiereStockItems}
               </p>
             </div>
             <div className="p-3 rounded-full bg-red-50">
@@ -151,9 +178,9 @@ const Inventario = () => {
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Valor Total</p>
+              <p className="text-sm font-medium text-gray-600">Total Productos</p>
               <p className="text-2xl font-bold" style={{ color: '#3F7416' }}>
-                S/. {totalValue.toFixed(2)}
+                 {totalValue.toFixed(0)}
               </p>
             </div>
             <div className="p-3 rounded-full bg-green-50">
@@ -171,7 +198,7 @@ const Inventario = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Buscar por nombre o SKU..."
+                placeholder="Buscar por nombre, SKU o estado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -201,30 +228,35 @@ const Inventario = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nombre de Producto
+                  Producto
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio
+                  Precio Venta
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock
+                  Stock Actual
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
+                  Stock Mínimo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Disponibilidad
+                  Fecha Ingreso
                 </th>
-
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado Stock
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr 
+                  key={item.id} 
+                  className={`hover:bg-gray-50 ${item.requiereAtencion ? 'bg-red-50' : ''}`}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
-                        <Package className="w-5 h-5 text-gray-500" />
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${item.requiereAtencion ? 'bg-red-100' : 'bg-gray-100'}`}>
+                        <Package className={`w-5 h-5 ${item.requiereAtencion ? 'text-red-500' : 'text-gray-500'}`} />
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -239,23 +271,30 @@ const Inventario = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
                     S/. {item.price.toFixed(2)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <span className="font-medium">{item.currentStock}</span>
+                      <span className={`font-medium ${getStockColor(item.currentStock, item.minStock)}`}>
+                        {item.currentStock}
+                      </span>
                       {item.currentStock <= item.minStock && (
                         <AlertTriangle className="w-4 h-4 text-red-500 ml-2" />
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(item.lastUpdated).toLocaleDateString('es-ES')}
+                    {item.minStock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(item.fechaIngreso).toLocaleDateString('es-ES')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(item.status)}`}>
-                      {getStatusText(item.status)}
+                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getEstadoColor(item.estadoStock)}`}>
+                      {item.estadoStock}
                     </span>
+                    {item.requiereAtencion && (
+                      <AlertTriangle className="inline-block w-4 h-4 ml-2 text-red-500" />
+                    )}
                   </td>
-
                 </tr>
               ))}
             </tbody>
@@ -263,7 +302,7 @@ const Inventario = () => {
         </div>
       </div>
 
-      {filteredItems.length === 0 && (
+      {filteredItems.length === 0 && !cargando && (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No se encontraron productos</h3>
@@ -272,8 +311,6 @@ const Inventario = () => {
           </p>
         </div>
       )}
-
-
     </div>
   );
 };
