@@ -5,11 +5,10 @@
 import { API_BASE_URL } from '../apiConfig';
 
 export const comprasEndpoints = {
-  base: `${API_BASE_URL}/compras`,
-  getAll: `${API_BASE_URL}/compras`,
-  getById: (id) => `${API_BASE_URL}/compras/${id}`,
-  create: `${API_BASE_URL}/compras`,
-  update: (id) => `${API_BASE_URL}/compras/${id}`,
-  delete: (id) => `${API_BASE_URL}/compras/${id}`,
-  byProveedor: (proveedorId) => `${API_BASE_URL}/compras/proveedor/${proveedorId}`,
+  registrar: '/orden-compra/registrar',
+  aprobar: (id) => `/orden-compra/aprobar/${id}`,
+  lista: '/orden-compra/lista',
+  buscarPorId: (id) => `/orden-compra/${id}`,
+  buscarPorCodigo: (codigo) => `/orden-compra/codigo/${codigo}`,
+  deshabilitar: (id) => `/orden-compra/deshabilitar/${id}`,
 };
