@@ -12,4 +12,5 @@ export const inventarioEndpoints = {
   agregarStock: `${API_BASE_URL}/inventario/agregar-stock`,
   ajustarStock: `${API_BASE_URL}/inventario/ajustar-stock`,
   bajoStock: `${API_BASE_URL}/inventario/bajo-stock`,
+  detallePanel: `${API_BASE_URL}/inventario/detallesPanel`,
 };
