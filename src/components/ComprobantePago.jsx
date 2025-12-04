@@ -11,6 +11,7 @@ const ComprobantePago = ({
   metodoPago,
   setMetodoPago,
   clienteDNI,
+  clienteSeleccionado,
   abrirModalCliente,
   procesarVenta
 }) => {
@@ -83,29 +84,43 @@ const ComprobantePago = ({
 
         {/* Botones de acción centralizados */}
         <div className="space-y-3 pt-3 border-t" style={{ borderColor: '#CCCCCC' }}>
-          {/* Botón Cliente */}
-          <button 
-            onClick={abrirModalCliente}
-            className="w-full py-2 px-3 rounded font-medium transition-colors text-sm flex items-center justify-center"
-            style={{ 
-              backgroundColor: clienteDNI ? '#3F7416' : 'transparent',
-              border: `1px solid #3F7416`,
-              color: clienteDNI ? '#FFFFFF' : '#3F7416'
-            }}
-            onMouseEnter={(e) => {
-              if (!clienteDNI) {
+          {/* Información del Cliente o Botón de Búsqueda */}
+          {clienteSeleccionado ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-green-800 mb-1">Cliente: </p>
+                  <p className="text-sm font-semibold text-gray-900">{clienteSeleccionado.nombres || clienteSeleccionado.nombre}</p>
+                  <p className="text-xs text-gray-600">DNI: {clienteSeleccionado.dni}</p>
+                </div>
+                <button
+                  onClick={abrirModalCliente}
+                  className="text-xs text-green-700 hover:text-green-900 underline"
+                >
+                  Cambiar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button 
+              onClick={abrirModalCliente}
+              className="w-full py-2 px-3 rounded font-medium transition-colors text-sm flex items-center justify-center"
+              style={{ 
+                backgroundColor: 'transparent',
+                border: `1px solid #3F7416`,
+                color: '#3F7416'
+              }}
+              onMouseEnter={(e) => {
                 e.target.style.backgroundColor = '#F9F9F9';
-              } else {
-                e.target.style.backgroundColor = '#2F5A10';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = clienteDNI ? '#3F7416' : 'transparent';
-            }}
-          >
-            <User className="w-4 h-4 mr-2" />
-            {clienteDNI ? `Cliente: ${clienteDNI}` : 'Cliente'}
-          </button>
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Buscar Cliente
+            </button>
+          )}
 
           {/* Botones Atrás y Guardar */}
           <div className="flex space-x-3">

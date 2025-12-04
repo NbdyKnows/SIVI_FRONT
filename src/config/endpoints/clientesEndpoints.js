@@ -8,6 +8,7 @@ export const clientesEndpoints = {
   base: `${API_BASE_URL}/clientes`,
   getAll: `${API_BASE_URL}/clientes`,
   getById: (id) => `${API_BASE_URL}/clientes/${id}`,
+  getByDni: (dni) => `${API_BASE_URL}/clientes/dni/${dni}`,
   create: `${API_BASE_URL}/clientes`,
   update: (id) => `${API_BASE_URL}/clientes/${id}`,
   delete: (id) => `${API_BASE_URL}/clientes/${id}`,

@@ -71,16 +71,6 @@ const ModalVenta = ({
                   <p className="text-lg font-semibold mt-1">Total: S/ {montoTotal.toFixed(2)}</p>
                 )}\n              </div>
               
-              {/* Información del cliente si existe */}
-              {clienteDNI && (
-                <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#F9F9F9', borderLeft: '3px solid #3F7416' }}>
-                  <div className="flex items-center justify-center">
-                    <User className="w-4 h-4 mr-2" style={{ color: '#633416' }} />
-                    <span className="text-sm font-medium" style={{ color: '#633416' }}>Cliente Registrado</span>
-                  </div>
-                  <p className="text-sm mt-1 font-mono" style={{ color: '#000000' }}>DNI: {clienteDNI}</p>
-                </div>
-              )}
               
               <div className="flex items-center justify-center">
                 <FileText className="w-5 h-5 mr-2" style={{ color: '#666666' }} />

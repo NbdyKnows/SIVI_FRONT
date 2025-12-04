@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, Package } from 'lucide-react';
+import categoriasService from '../../services/categoriasService';
 
-const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias = [] }) => {
+const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias: categoriasProp = [] }) => {
   const [formData, setFormData] = useState({
     descripcion: '',
     id_cat: '',
@@ -11,6 +12,28 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [categorias, setCategorias] = useState([]);
+
+  // Cargar categorías desde API si no se proporcionan
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      if (categoriasProp && categoriasProp.length > 0) {
+        setCategorias(categoriasProp);
+      } else {
+        try {
+          const data = await categoriasService.getAll();
+          setCategorias(data || []);
+        } catch (error) {
+          console.error('Error al cargar categorías:', error);
+          setCategorias([]);
+        }
+      }
+    };
+
+    if (isOpen) {
+      cargarCategorias();
+    }
+  }, [isOpen, categoriasProp]);
 
   // Efecto para cargar datos del producto si está editando
   useEffect(() => {
@@ -206,7 +229,7 @@ const ModalInventario = ({ isOpen, onClose, onSave, product = null, categorias =
             >
               <option value="">Seleccionar categoría</option>
               {categorias.map(categoria => (
-                <option key={categoria.id_cat} value={categoria.id_cat}>
+                <option key={categoria.idCat || categoria.id_cat} value={categoria.idCat || categoria.id_cat}>
                   {categoria.descripcion}
                 </option>
               ))}
