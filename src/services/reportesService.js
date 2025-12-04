@@ -1,170 +1,130 @@
-import axios from 'axios';
-import { API_TIMEOUT } from '../config/apiConfig';
-import { reportesEndpoints } from '../config/endpoints/reportesEndpoints';
 import authService from './authService';
+import { API_BASE_URL } from '../config/appConfig';
+import { reportesEndpoints } from '../config/endpoints/reportesEndpoints';
 
-const descargarArchivo = (response, nombreDefecto) => {
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link = document.createElement('a');
-  link.href = url;
-  
-  let nombreArchivo = nombreDefecto;
-  const contentDisposition = response.headers['content-disposition'];
-  
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^"]+)"?/);
-    if (match && match[2]) {
-      nombreArchivo = match[2];
+const _descargar = async (endpoint, params, nombreBase) => {
+  try {
+    const token = authService.getAccessToken();
+    
+    if (!token || token === 'local_token') {
+      throw new Error('Debes iniciar sesión para descargar reportes reales.');
     }
-  }
 
-  link.setAttribute('download', nombreArchivo);
-  document.body.appendChild(link);
-  link.click();
-  link.parentNode.removeChild(link);
-  window.URL.revokeObjectURL(url);
+    const url = new URL(`${API_BASE_URL}${endpoint}`);
+    
+    Object.keys(params).forEach(key => {
+      if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+        url.searchParams.append(key, params[key]);
+      }
+    });
+
+    console.log(`Solicitando reporte a: ${url.toString()}`);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('Acceso Denegado: No tienes permisos para ver este reporte.');
+      }
+      const errorText = await response.text();
+      throw new Error(`Error del servidor: ${errorText || response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    
+    let nombreArchivo = nombreBase;
+    const disposition = response.headers.get('Content-Disposition');
+    if (disposition && disposition.includes('filename=')) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) { 
+        nombreArchivo = matches[1].replace(/['"]/g, '');
+      }
+    }
+
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return true;
+
+  } catch (error) {
+    console.error('Error descargando reporte:', error);
+    throw error;
+  }
 };
 
 export const generarReporteDeVentas = async (opciones) => {
   const { tipoReporte, tipoFormato, fechaInicio, fechaFin } = opciones;
-  const token = authService.getAccessToken();
+  
+  const endpoint = tipoReporte === 'por_producto'
+    ? reportesEndpoints.ventasPorProducto
+    : reportesEndpoints.ventasPorComprobante;
 
-  if (!token) {
-    alert("No hay sesión activa. Por favor inicia sesión nuevamente.");
-    return;
-  }
+  const ext = tipoFormato === 'excel' ? 'xlsx' : 'pdf';
+  const nombre = `Reporte_Ventas_${tipoReporte}.${ext}`;
 
-  let url = '';
-  let nombreArchivo = `Reporte_Ventas_${fechaInicio}_al_${fechaFin}.${tipoFormato === 'excel' ? 'xlsx' : 'pdf'}`;
-
-  if (tipoReporte === 'por_producto') {
-    url = reportesEndpoints.ventasPorProducto;
-  } else {
-    url = reportesEndpoints.ventasPorComprobante;
-  }
-
-  try {
-    console.log(`Generando reporte en: ${url}`);
-    
-    const response = await axios.get(url, {
-      params: {
-        formato: tipoFormato,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin
-      },
-      responseType: 'blob',
-      timeout: API_TIMEOUT || 15000,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    descargarArchivo(response, nombreArchivo);
-    return true;
-
-  } catch (error) {
-    console.error('Error en servicio de reportes:', error);
-    
-    if (error.response && error.response.status === 403) {
-        alert("Acceso denegado (403). Tu usuario no tiene permisos.");
-    } else {
-        alert("Error al generar el reporte de ventas.");
-    }
-    throw error;
-  }
+  return _descargar(endpoint, {
+    formato: tipoFormato,
+    fechaInicio,
+    fechaFin
+  }, nombre);
 };
 
 export const generarReporteInventario = async (opciones) => {
   const { tipoReporte, tipoFormato, fechaInicio, fechaFin } = opciones;
-  const token = authService.getAccessToken();
-
-  if (!token) {
-    alert("No hay sesión activa.");
-    return;
-  }
-
-  const url = reportesEndpoints.inventario;
+  const ext = tipoFormato === 'excel' ? 'xlsx' : 'pdf';
+  
   const params = { formato: tipoFormato };
-  let nombreArchivo = `Reporte_Inventario.${tipoFormato === 'excel' ? 'xlsx' : 'pdf'}`;
+  let nombre = `Reporte_Inventario_Stock.${ext}`;
 
   if (tipoReporte === 'movimientos') {
-    if (fechaInicio && fechaFin) {
-        params.fechaInicio = fechaInicio;
-        params.fechaFin = fechaFin;
-        nombreArchivo = `Reporte_Movimientos_${fechaInicio}_al_${fechaFin}.${tipoFormato === 'excel' ? 'xlsx' : 'pdf'}`;
-    } else {
-        alert("Debes seleccionar un rango de fechas.");
-        return;
+    if (!fechaInicio || !fechaFin) {
+      throw new Error("Para el reporte de movimientos se requiere un rango de fechas.");
     }
-  } else {
-    nombreArchivo = `Reporte_Stock_Actual.${tipoFormato === 'excel' ? 'xlsx' : 'pdf'}`;
+    params.fechaInicio = fechaInicio;
+    params.fechaFin = fechaFin;
+    nombre = `Reporte_Movimientos_${fechaInicio}_${fechaFin}.${ext}`;
   }
 
-  try {
-    console.log(`Generando reporte inventario en: ${url}`, params);
-    
-    const response = await axios.get(url, {
-      params: params,
-      responseType: 'blob',
-      timeout: API_TIMEOUT || 15000,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    descargarArchivo(response, nombreArchivo);
-    return true;
-
-  } catch (error) {
-    console.error('Error en reporte inventario:', error);
-    if (error.response && error.response.status === 403) {
-        alert("Acceso denegado (403).");
-    } else {
-        alert("Error al generar el reporte de inventario.");
-    }
-    throw error;
-  }
+  return _descargar(reportesEndpoints.inventario, params, nombre);
 };
 
 export const generarReporteFinanciero = async (opciones) => {
   const { tipoReporte, tipoFormato, fechaInicio, fechaFin } = opciones;
-  const token = authService.getAccessToken();
-
-  if (!token) {
-    alert("No hay sesión activa.");
-    return;
-  }
-
-  const url = reportesEndpoints.financiero;
-  const params = {
-    formato: tipoFormato,
-    tipo: tipoReporte,
-    fechaInicio: fechaInicio,
-    fechaFin: fechaFin
-  };
+  const ext = tipoFormato === 'excel' ? 'xlsx' : 'pdf';
 
   if (!fechaInicio || !fechaFin) {
-      alert("El reporte financiero requiere un periodo contable (fechas).");
-      return;
+    throw new Error("Los reportes financieros requieren un periodo contable (fechas).");
   }
+  
+  const nombre = `Financiero_${tipoReporte}.${ext}`;
 
-  let nombreArchivo = `Reporte_Financiero_${tipoReporte}_${fechaInicio}.${tipoFormato === 'excel' ? 'xlsx' : 'pdf'}`;
+  return _descargar(reportesEndpoints.financiero, {
+    tipo: tipoReporte,
+    formato: tipoFormato,
+    fechaInicio,
+    fechaFin
+  }, nombre);
+};
 
-  try {
-    console.log(`Solicitando reporte financiero a: ${url}`, params);
-    
-    const response = await axios.get(url, {
-      params: params,
-      responseType: 'blob',
-      timeout: API_TIMEOUT || 20000,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    descargarArchivo(response, nombreArchivo);
-    return true;
+const reportesService = {
+  generarReporteDeVentas,
+  generarReporteInventario,
+  generarReporteFinanciero
+};
 
+<<<<<<< HEAD
   } catch (error) {
     console.error("Error financiero:", error);
     if (error.response && error.response.status === 403) {
@@ -182,4 +142,6 @@ const reportesService = {
   generarReporteFinanciero,
 };
 
+=======
+>>>>>>> master
 export default reportesService;

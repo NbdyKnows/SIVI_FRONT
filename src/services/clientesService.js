@@ -51,12 +51,127 @@ const clientesService = {
   },
 
   /**
+<<<<<<< HEAD
+=======
+   * Obtener un cliente por DNI
+   * GET /api/clientes/dni/:dni
+   */
+  async getByDni(dni) {
+    try {
+      const cliente = await httpClient.get(clientesEndpoints.getByDni(dni));
+      return cliente;
+    } catch (error) {
+      // Si no se encuentra el cliente (404), devolver null en lugar de lanzar error
+      if (error.status === 404) {
+        return null;
+      }
+      console.error(`Error al obtener cliente con DNI ${dni}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Consultar DNI en RENIEC
+   * GET https://api.codart.cgrt.net/api/v1/consultas/reniec/dni/:dni
+   */
+  async consultarReniec(dni) {
+    try {
+      const token = import.meta.env.VITE_RENIEC_API_TOKEN;
+      const response = await fetch(
+        `https://api.codart.cgrt.net/api/v1/consultas/reniec/dni/${dni}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error al consultar RENIEC: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.result) {
+        return {
+          success: true,
+          nombre: data.result.full_name,
+          datos: data.result
+        };
+      }
+
+      return { success: false, message: 'No se encontró información del DNI' };
+    } catch (error) {
+      console.error(`Error al consultar RENIEC para DNI ${dni}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Verificar y registrar cliente para venta
+   * - Primero busca si existe en la BD por DNI
+   * - Si no existe, consulta RENIEC y registra automáticamente
+   * - Retorna los datos del cliente listos para usar en la venta
+   * 
+   * @param {string} dni - DNI del cliente
+   * @returns {Object} - Datos del cliente { id, dni, nombre }
+   */
+  async verificarYRegistrarCliente(dni) {
+    try {
+      // 1. Verificar si el cliente ya existe en la BD
+      const clienteExistente = await this.getByDni(dni);
+      
+      if (clienteExistente) {
+        // Cliente existe, retornar sus datos
+        return {
+          success: true,
+          cliente: clienteExistente,
+          mensaje: 'Cliente encontrado'
+        };
+      }
+
+      // 2. Cliente no existe, consultar RENIEC
+      const datosReniec = await this.consultarReniec(dni);
+      
+      if (!datosReniec.success) {
+        return {
+          success: false,
+          mensaje: 'No se pudo obtener información del DNI'
+        };
+      }
+
+      // 3. Registrar el nuevo cliente con datos de RENIEC
+      const nuevoCliente = await this.create({
+        dni: dni,
+        nombres: datosReniec.nombre
+      });
+
+      return {
+        success: true,
+        cliente: nuevoCliente,
+        mensaje: 'Cliente registrado automáticamente',
+        nuevoRegistro: true
+      };
+    } catch (error) {
+      console.error(`Error al verificar y registrar cliente con DNI ${dni}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+>>>>>>> master
    * Crear un nuevo cliente
    * POST /api/clientes
    * 
    * @param {Object} cliente - Datos del cliente
    * @param {string} cliente.dni - DNI del cliente
+<<<<<<< HEAD
    * @param {string} cliente.nombre - Nombre completo
+=======
+   * @param {string} cliente.nombres - Nombre completo
+>>>>>>> master
    * @param {string} cliente.telefono - Teléfono (opcional)
    * @param {string} cliente.email - Email (opcional)
    */

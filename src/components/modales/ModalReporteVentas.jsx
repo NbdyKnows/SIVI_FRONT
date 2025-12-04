@@ -11,13 +11,14 @@ import {
   Package,
   Receipt
 } from 'lucide-react';
+import reportesService from '../../services/reportesService';
 
 const getPresetDates = (preset) => {
   const end = new Date();
   const start = new Date();
   
   if (preset === 'today') {
-    // star
+    // start es hoy por defecto
   } else if (preset === '7days') {
     start.setDate(start.getDate() - 6);
   } else if (preset === '30days') {
@@ -30,7 +31,7 @@ const getPresetDates = (preset) => {
   return { fechaInicio: toISODate(start), fechaFin: toISODate(end) };
 };
 
-const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
+const ModalReporteVentas = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     tipoReporte: 'por_producto',
     fechaInicio: '',
@@ -39,6 +40,7 @@ const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
         tipoFormato: 'pdf'
       });
       setErrors({});
+      setSuccessMessage('');
       setIsLoading(false);
     }
   }, [isOpen]);
@@ -61,6 +64,7 @@ const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+    if (errors.form) setErrors(prev => ({ ...prev, form: null }));
   };
 
   const handleSetPreset = (preset) => {
@@ -91,12 +95,19 @@ const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage('');
+
     try {
-      await onGenerate(formData);
+      await reportesService.generarReporteDeVentas(formData);
+      
+      setSuccessMessage('Reporte generado y descargado con éxito.');
+      
     } catch (error) {
       console.error("Error al generar reporte:", error);
-      setErrors({ form: 'No se pudo generar el reporte. Intente de nuevo.' });
+      setErrors({ form: error.message || 'No se pudo generar el reporte. Intente de nuevo.' });
     } finally {
       setIsLoading(false);
     }
@@ -275,14 +286,20 @@ const ModalReporteVentas = ({ isOpen, onClose, onGenerate }) => {
             </div>
           </div>
           
+          {/* Mensajes */}
           {errors.form && (
-            <div className="flex items-center gap-2 justify-center p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {errors.form}
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center justify-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {errors.form}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center justify-center gap-2">
+                <FileDown className="w-4 h-4" /> {successMessage}
             </div>
           )}
 
-          {/* Footer - BOTONES CORREGIDOS CON STYLE DIRECTO */}
+          {/* Footer */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
               type="button"

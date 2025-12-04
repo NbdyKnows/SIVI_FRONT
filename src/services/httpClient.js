@@ -120,8 +120,11 @@ const httpClient = {
       ...options.headers,
     };
 
+    // Construir URL completa
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(fullUrl, {
         method: 'GET',
         headers,
         ...options,
@@ -145,8 +148,11 @@ const httpClient = {
       ...options.headers,
     };
 
+    // Construir URL completa
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(fullUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(data),
@@ -171,8 +177,11 @@ const httpClient = {
       ...options.headers,
     };
 
+    // Construir URL completa
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(fullUrl, {
         method: 'PUT',
         headers,
         body: JSON.stringify(data),
@@ -197,8 +206,11 @@ const httpClient = {
       ...options.headers,
     };
 
+    // Construir URL completa
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(fullUrl, {
         method: 'PATCH',
         headers,
         body: JSON.stringify(data),
@@ -223,8 +235,11 @@ const httpClient = {
       ...options.headers,
     };
 
+    // Construir URL completa
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(fullUrl, {
         method: 'DELETE',
         headers,
         ...options,

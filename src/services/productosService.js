@@ -115,13 +115,13 @@ const productosService = {
   },
 
   /**
-   * Buscar productos
-   * GET /almacen/productos/search?q=...
+   * Buscar productos (autocomplete)
+   * GET /almacen/productos/search?query=...
    */
   async search(query) {
     try {
       const productos = await httpClient.get(
-        `${productosEndpoints.search}?q=${encodeURIComponent(query)}`
+        `${productosEndpoints.search}?query=${encodeURIComponent(query)}`
       );
       return productos;
     } catch (error) {

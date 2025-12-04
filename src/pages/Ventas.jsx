@@ -10,6 +10,11 @@ import ventasService from '../services/ventasService';
 import inventarioService from '../services/inventarioService';
 import descuentosService from '../services/descuentosService';
 import clientesService from '../services/clientesService';
+<<<<<<< HEAD
+=======
+import productosService from '../services/productosService';
+import { generarTicketPDF } from '../utils/generarTicketPDF';
+>>>>>>> master
 
 const Ventas = () => {
   const { data: database, updateInventario } = useDatabase();
@@ -29,6 +34,12 @@ const Ventas = () => {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [aplicaDescuentoFidelidad, setAplicaDescuentoFidelidad] = useState(false);
   const [porcentajeDescuentoFidelidad, setPorcentajeDescuentoFidelidad] = useState(0);
+<<<<<<< HEAD
+=======
+  const [ventaCreadaData, setVentaCreadaData] = useState(null);
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+>>>>>>> master
   
   // Estados adicionales para descuentos automáticos
   const [mostrarDescuentoFidelidad, setMostrarDescuentoFidelidad] = useState(false);
@@ -88,12 +99,11 @@ const Ventas = () => {
         
         if (descuento.tipo_aplicacion === 'producto') {
           // Descuento por producto específico
-          aplicaDescuento = descuento.productos_seleccionados.some(p => p.id === producto.id_producto);
+          aplicaDescuento = descuento.productos_seleccionados.some(p => p.id === producto.idProducto);
         } else if (descuento.tipo_aplicacion === 'categoria') {
           // Descuento por categoría
-          const categoriaProducto = database?.producto_cat?.find(c => c.id_cat === producto.id_cat);
           aplicaDescuento = descuento.categorias_seleccionadas.some(cat => 
-            cat.nombre.toLowerCase() === (categoriaProducto?.descripcion || '').toLowerCase()
+            cat.nombre.toLowerCase() === (producto.categoria || '').toLowerCase()
           );
         }
         
@@ -120,20 +130,28 @@ const Ventas = () => {
     });
   };
 
-  // Obtener productos disponibles con inventario y descuentos
-  const productos = database?.producto?.filter(p => p.habilitado).map(producto => {
-    const inventario = database?.inventario?.find(inv => inv.id_producto === producto.id_producto && inv.habilitado);
-    const categoria = database?.producto_cat?.find(c => c.id_cat === producto.id_cat);
-    return {
-      ...producto,
-      stock: inventario?.stock || 0,
-      precio_venta: inventario?.precio || 0,
-      codigo: `P${String(producto.id_producto).padStart(3, '0')}`,
-      nombre: producto.descripcion,
-      categoria: categoria?.descripcion || 'Sin categoría'
-    };
-  }).filter(p => p.stock > 0) || [];
+  // Cargar productos desde la API
+  const cargarProductosDesdeAPI = async () => {
+    setIsLoadingProducts(true);
+    try {
+      // Cargar productos e inventario en paralelo
+      const [productos, inventario] = await Promise.all([
+        productosService.getAll(),
+        inventarioService.getAll()
+      ]);
+      
+      console.log('📦 Productos cargados:', productos);
+      console.log('📊 Inventario cargado:', inventario);
+      
+      // Crear mapa de inventario para búsqueda rápida
+      const inventarioMap = {};
+      inventario.forEach(inv => {
+        if (inv.habilitado) {
+          inventarioMap[inv.idProducto] = inv;
+        }
+      });
 
+<<<<<<< HEAD
   // Cargar y aplicar descuentos cuando cambie la base de datos
   useEffect(() => {
     const cargarDescuentos = async () => {
@@ -155,6 +173,164 @@ const Ventas = () => {
       producto.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+=======
+      // Transformar estructura de API a estructura esperada
+      const productosFormateados = productos
+        .filter(p => p.habilitado)
+        .map(producto => {
+          const inv = inventarioMap[producto.idProducto];
+          
+          // Si no hay inventario o stock es 0, no incluir el producto
+          if (!inv || !inv.stock || inv.stock <= 0) {
+            return null;
+          }
+
+          return {
+            id_producto: producto.idProducto,
+            idProducto: producto.idProducto,
+            nombre: producto.descripcion,
+            descripcion: producto.descripcion,
+            stock: inv.stock || 0,
+            precio_venta: inv.precio || 0,
+            codigo: producto.codigo || `P${String(producto.idProducto).padStart(3, '0')}`,
+            categoria: producto.categoria || 'Sin categoría',
+            id_cat: producto.idCat,
+            habilitado: true
+          };
+        })
+        .filter(p => p !== null);
+
+      console.log('✅ Productos formateados:', productosFormateados);
+
+      // Aplicar descuentos
+      const productosConDesc = await aplicarDescuentosAProductos(productosFormateados);
+      setProductosDisponibles(productosConDesc);
+      setProductosConDescuento(productosConDesc);
+    } catch (error) {
+      console.error('❌ Error al cargar productos desde API:', error);
+      // Fallback a JSON local si falla la API
+      console.warn('⚠️ Usando productos del JSON local como fallback');
+      cargarProductosDesdeJSON();
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  // Fallback: Cargar productos desde JSON local
+  const cargarProductosDesdeJSON = async () => {
+    if (!database?.producto) return;
+    
+    const productos = database.producto.filter(p => p.habilitado).map(producto => {
+      const inventario = database?.inventario?.find(inv => inv.id_producto === producto.id_producto && inv.habilitado);
+      const categoria = database?.producto_cat?.find(c => c.id_cat === producto.id_cat);
+      return {
+        id_producto: producto.id_producto,
+        idProducto: producto.id_producto,
+        stock: inventario?.stock || 0,
+        precio_venta: inventario?.precio || 0,
+        codigo: `P${String(producto.id_producto).padStart(3, '0')}`,
+        nombre: producto.descripcion,
+        descripcion: producto.descripcion,
+        categoria: categoria?.descripcion || 'Sin categoría',
+        habilitado: true
+      };
+    }).filter(p => p.stock > 0);
+
+    const productosConDesc = await aplicarDescuentosAProductos(productos);
+    setProductosDisponibles(productosConDesc);
+    setProductosConDescuento(productosConDesc);
+  };
+
+  // Buscar productos con autocomplete
+  const buscarProductos = async (query) => {
+    if (!query || query.trim().length < 1) {
+      // Si no hay búsqueda, mostrar todos los productos disponibles
+      setProductosConDescuento(productosDisponibles);
+      return;
+    }
+
+    try {
+      // Obtener productos e inventario
+      const [resultados, inventario] = await Promise.all([
+        productosService.search(query),
+        inventarioService.getAll()
+      ]);
+      
+      console.log('🔍 Resultados búsqueda:', resultados);
+      
+      // Crear mapa de inventario
+      const inventarioMap = {};
+      inventario.forEach(inv => {
+        if (inv.habilitado) {
+          inventarioMap[inv.idProducto] = inv;
+        }
+      });
+      
+      // Transformar y filtrar resultados
+      const productosFormateados = resultados
+        .filter(p => p.habilitado)
+        .map(producto => {
+          const inv = inventarioMap[producto.idProducto];
+          
+          // Si no hay inventario o stock es 0, no incluir
+          if (!inv || !inv.stock || inv.stock <= 0) {
+            return null;
+          }
+
+          return {
+            id_producto: producto.idProducto,
+            idProducto: producto.idProducto,
+            nombre: producto.descripcion,
+            descripcion: producto.descripcion,
+            stock: inv.stock || 0,
+            precio_venta: inv.precio || 0,
+            codigo: producto.codigo || `P${String(producto.idProducto).padStart(3, '0')}`,
+            categoria: producto.categoria || 'Sin categoría',
+            id_cat: producto.idCat,
+            habilitado: true
+          };
+        })
+        .filter(p => p !== null);
+
+      console.log('✅ Productos encontrados:', productosFormateados);
+
+      const productosConDesc = await aplicarDescuentosAProductos(productosFormateados);
+      setProductosConDescuento(productosConDesc);
+    } catch (error) {
+      console.error('❌ Error al buscar productos:', error);
+      // Fallback a búsqueda local
+      const resultadosLocales = productosDisponibles.filter(p =>
+        p.nombre?.toLowerCase().includes(query.toLowerCase()) ||
+        p.codigo?.toLowerCase().includes(query.toLowerCase()) ||
+        p.categoria?.toLowerCase().includes(query.toLowerCase())
+      );
+      setProductosConDescuento(resultadosLocales);
+    }
+  };
+
+  // Cargar productos al montar el componente
+  useEffect(() => {
+    cargarProductosDesdeAPI();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Efecto para búsqueda con debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm) {
+        buscarProductos(searchTerm);
+      } else {
+        setProductosConDescuento(productosDisponibles);
+      }
+    }, 200); // Debounce de 200ms para respuesta más rápida
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Filtrar productos por búsqueda
+  const productosFiltrados = productosConDescuento;
+>>>>>>> master
 
   // Seleccionar producto para agregar
   const seleccionarProducto = (producto) => {
@@ -259,7 +435,11 @@ const Ventas = () => {
       // Preparar datos de venta
       const ventaData = {
         idUsuario: user?.id_usuario || user?.idUsuario,
+<<<<<<< HEAD
         idCliente: clienteSeleccionado?.idCliente || null,
+=======
+        idCliente: clienteSeleccionado?.idCliente || clienteSeleccionado?.id || null,
+>>>>>>> master
         descuentoTotal: descuentoFidelidadMonto + descuentoProductos,
         subtotal: subtotal,
         igv: igv,
@@ -282,6 +462,12 @@ const Ventas = () => {
       
       console.log('✅ Venta procesada exitosamente:', ventaCreada);
       
+<<<<<<< HEAD
+=======
+      // Guardar datos de la venta creada para el ticket
+      setVentaCreadaData(ventaCreada);
+      
+>>>>>>> master
       // Actualizar stock localmente para sincronización inmediata
       const inventarioActualizado = { ...database };
       productosVenta.forEach(producto => {
@@ -371,6 +557,8 @@ const Ventas = () => {
     setProductosVenta([]);
     setSearchTerm('');
     setClienteDNI('');
+    setClienteSeleccionado(null);
+    setVentaCreadaData(null);
   };
 
   // Manejar modal de cliente
@@ -383,13 +571,22 @@ const Ventas = () => {
   };
 
   const guardarCliente = async (cliente) => {
+<<<<<<< HEAD
+=======
+    console.log('Cliente seleccionado:', cliente);
+>>>>>>> master
     setClienteDNI(cliente.dni || cliente.numeroDocumento);
     setClienteSeleccionado(cliente);
     setShowClienteModal(false);
     
     // Verificar descuento de fidelidad
+<<<<<<< HEAD
     if (cliente.idCliente) {
       await verificarDescuentoFidelidad(cliente.idCliente);
+=======
+    if (cliente.idCliente || cliente.id) {
+      await verificarDescuentoFidelidad(cliente.idCliente || cliente.id);
+>>>>>>> master
     }
   };
 
@@ -406,41 +603,54 @@ const Ventas = () => {
 
   // Imprimir comprobante
   const imprimirComprobante = () => {
-    // Obtener la última venta registrada
-    const ventas = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-    const ultimaVenta = ventas[ventas.length - 1];
-    
-    if (ultimaVenta) {
-      console.log('=== COMPROBANTE DE VENTA ===');
-      console.log(`Fecha: ${new Date(ultimaVenta.fecha).toLocaleString('es-PE')}`);
-      console.log(`Vendedor: ${ultimaVenta.vendedor}`);
-      console.log(`Cliente: ${ultimaVenta.cliente}`);
-      console.log('\n--- PRODUCTOS ---');
-      ultimaVenta.productos.forEach(p => {
-        console.log(`${p.nombre} x${p.cantidad} - S/ ${p.precio_unitario.toFixed(2)} = S/ ${p.total.toFixed(2)}`);
+    if (!ventaCreadaData) {
+      console.error('No hay datos de venta para imprimir');
+      alert('Error: No se encontraron datos de la venta');
+      return;
+    }
+
+    try {
+      // Crear fecha formateada para el nombre del archivo (usar fecha actual si hay error)
+      const ahora = new Date();
+      const fechaFormato = ahora.toISOString()
+        .replace(/[-:]/g, '')
+        .replace('T', '_')
+        .split('.')[0]; // YYYYMMDD_HHMMSS
+
+      // Generar el ticket PDF
+      generarTicketPDF({
+        codigo: ventaCreadaData.codigo,
+        fecha: ventaCreadaData.fechaVenta || new Date().toISOString(),
+        vendedor: selectedVendedor,
+        clienteNombre: clienteSeleccionado?.nombres || clienteSeleccionado?.nombre || 'Sin registro',
+        clienteDNI: clienteDNI || 'Sin registro',
+        productos: productosVenta.map(p => ({
+          nombre: p.nombre,
+          cantidad: p.cantidad,
+          precio_unitario: p.precio_venta,
+          precio_con_descuento: p.precio_con_descuento || p.precio_venta,
+          descuento_aplicado: p.descuento ? {
+            nombre: p.descuento.nombre,
+            tipo: p.descuento.tipo_descuento,
+            valor: p.descuento_valor
+          } : null
+        })),
+        subtotal: subtotal,
+        igv: igv,
+        descuento_productos: descuentoProductos,
+        descuento_fidelidad: {
+          porcentaje: porcentajeDescuentoFidelidad,
+          monto: descuentoFidelidadMonto
+        },
+        total: total,
+        metodoPago: metodoPago,
+        fechaFormato: fechaFormato
       });
-      console.log('\n--- TOTALES ---');
-      console.log(`Subtotal: S/ ${ultimaVenta.subtotal.toFixed(2)}`);
-      console.log(`IGV (18%): S/ ${ultimaVenta.igv.toFixed(2)}`);
-      if (ultimaVenta.descuentos > 0) {
-        console.log(`Descuentos: -S/ ${ultimaVenta.descuentos.toFixed(2)}`);
-      }
-      console.log(`TOTAL: S/ ${ultimaVenta.total.toFixed(2)}`);
-      console.log(`Método de Pago: ${ultimaVenta.metodoPago}`);
-      console.log('========================');
-      
-      // Mostrar resumen de stock actualizado
-      const inventarioTemp = JSON.parse(localStorage.getItem('sivi_inventario_temp') || '[]');
-      if (inventarioTemp.length > 0) {
-        console.log('\n--- STOCK ACTUALIZADO ---');
-        ultimaVenta.productos.forEach(p => {
-          const inv = inventarioTemp.find(i => i.id_producto === p.id_producto);
-          if (inv) {
-            console.log(`${p.nombre}: Stock restante = ${inv.stock}`);
-          }
-        });
-        console.log('========================');
-      }
+
+      console.log('✅ Ticket PDF generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al generar ticket PDF:', error);
+      alert('Error al generar el ticket. Por favor intente nuevamente.');
     }
     
     cerrarModal();
@@ -499,12 +709,12 @@ const Ventas = () => {
 
 
   // Loading state
-  if (!database) {
+  if (isLoadingProducts) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando datos...</p>
+          <p className="mt-4 text-gray-600">Cargando productos...</p>
         </div>
       </div>
     );
@@ -619,6 +829,7 @@ const Ventas = () => {
               metodoPago={metodoPago}
               setMetodoPago={setMetodoPago}
               clienteDNI={clienteDNI}
+              clienteSeleccionado={clienteSeleccionado}
               abrirModalCliente={abrirModalCliente}
               procesarVenta={procesarVenta}
             />

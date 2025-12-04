@@ -37,6 +37,7 @@ const inventarioService = {
   },
 
   /**
+<<<<<<< HEAD
    * Obtener todo el inventario
    * GET /api/inventario
    */
@@ -51,6 +52,8 @@ const inventarioService = {
   },
 
   /**
+=======
+>>>>>>> master
    * Obtener inventario por ID
    * GET /api/inventario/:id
    */

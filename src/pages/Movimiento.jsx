@@ -4,7 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import database from '../data/database.json';
 import PaginacionTabla from '../components/PaginacionTabla';
 import movimientosService from '../services/movimientosService';
+<<<<<<< HEAD
 import productosService from '../services/productosService';
+=======
+import productosService from '../services/productosService'; 
+>>>>>>> master
 
 const MovimientosInventario = () => {
   const navigate = useNavigate();
@@ -52,6 +56,7 @@ const MovimientosInventario = () => {
     usuario: 'admin'
   });
 
+<<<<<<< HEAD
   const cargarDatos = async () => {
     try {
       // 1. Cargar movimientos desde el backend
@@ -104,6 +109,60 @@ const MovimientosInventario = () => {
 
   useEffect(() => {
 
+=======
+const cargarDatos = async () => {
+      try {
+        // 1. Cargar movimientos desde el backend
+        const dataMovimientos = await movimientosService.getAll(0); // 0 para Entradas
+        console.log('Movimientos cargados desde API:', dataMovimientos);
+
+        // Mapear los datos del backend a la estructura que espera tu componente
+        const movimientosMapeados = dataMovimientos.map(mov => ({
+          id_movimiento_cab: mov.idMovimientoCab,
+          codigo: mov.codigo,
+          usuario: mov.usuario,
+          entrada_salida: mov.tipoMovimiento === 'ENTRADA' ? 1 : 2,
+          fecha: new Date().toISOString(), // Ajusta según lo que devuelva el backend
+          //detalles: [], // El backend solo devuelve cabecera, no detalles
+          cantidadProductos: mov.cantidadProductos,
+          habilitado: true
+        }));
+
+        setMovimientos(movimientosMapeados);
+        setMovimientosFiltrados(movimientosMapeados);
+
+        // 2. Cargar productos DESDE EL BACKEND
+        console.log('🔄 Cargando productos del backend...');
+        const productosBackend = await productosService.getAll();
+        console.log('✅ Productos cargados:', productosBackend.length);
+
+        // Mapear productos del backend a la estructura que espera tu componente
+        const productosMapeados = productosBackend.map(producto => ({
+          id_producto: producto.idProducto || producto.id,
+          codigo: producto.codigo || '',
+          descripcion: producto.descripcion || producto.nombre || '',
+          // Agrega otros campos que necesites
+          precio_compra: producto.precioCompra || 0,
+          precio_venta: producto.precioVenta || 0,
+          stock: producto.stock || 0,
+          habilitado: producto.habilitado !== false
+        })).sort((a, b) => a.descripcion.localeCompare(b.descripcion)); // <-- ORDENAR AQUÍ
+
+        setProductos(productosMapeados);
+
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        // Si hay error, carga datos locales como respaldo
+        const movimientosData = database.movimiento_cab || [];
+        setMovimientos(movimientosData);
+        setMovimientosFiltrados(movimientosData);
+        setProductos(database.producto || []);
+      }
+    };
+
+  useEffect(() => {
+    
+>>>>>>> master
 
     cargarDatos();
   }, []);
@@ -165,17 +224,25 @@ const MovimientosInventario = () => {
     const producto = productos.find(p => p.id_producto === parseInt(detalleActual.idProducto));
     if (!producto) return;
 
+<<<<<<< HEAD
     // Si es Salida, usar precio 1
     const precioCompra = cabecera.entradaSalida === 2 ? 1 : parseFloat(detalleActual.precioCompra);
     const precioVenta = cabecera.entradaSalida === 2 ? 1 : parseFloat(detalleActual.precioVenta);
 
+=======
+>>>>>>> master
     const nuevoDetalle = {
       id: Date.now(), // ID temporal para React
       idProducto: parseInt(detalleActual.idProducto),
       producto: producto.descripcion,
       cantidad: parseFloat(detalleActual.cantidad),
+<<<<<<< HEAD
       precioCompra: precioCompra,
       precioVenta: precioVenta
+=======
+      precioCompra: parseFloat(detalleActual.precioCompra),
+      precioVenta: parseFloat(detalleActual.precioVenta)
+>>>>>>> master
     };
 
     setDetalles(prev => [...prev, nuevoDetalle]);
@@ -184,8 +251,13 @@ const MovimientosInventario = () => {
     setDetalleActual({
       idProducto: '',
       cantidad: '',
+<<<<<<< HEAD
       precioCompra: cabecera.entradaSalida === 2 ? '1' : '', // Mantener 1 si es Salida
       precioVenta: cabecera.entradaSalida === 2 ? '1' : ''   // Mantener 1 si es Salida
+=======
+      precioCompra: '',
+      precioVenta: ''
+>>>>>>> master
     });
 
     // Limpiar errores
@@ -272,6 +344,7 @@ const MovimientosInventario = () => {
     }
   };
 
+<<<<<<< HEAD
 
   const verDetallesMovimiento = async (cabeceraMovimiento) => {
     setCargandoDetalles(true);
@@ -316,6 +389,74 @@ const MovimientosInventario = () => {
       setCargandoDetalles(false);
     }
   };
+=======
+  // Función para ver detalles de un movimiento
+  // const verDetallesMovimiento = async (idMovimiento) => {
+  //   setCargandoDetalles(true);
+  //   setMovimientoSeleccionado(null);
+
+  //   try {
+  //     console.log(`🔍 Buscando detalles del movimiento ${idMovimiento}...`);
+  //     const movimientoCompleto = await movimientosService.getById(idMovimiento);
+
+  //     // Mapear los detalles para mostrar
+  //     const detallesActivos = movimientoCompleto.detalles.filter(det => det.habilitado);
+  //     const detallesInactivos = movimientoCompleto.detalles.filter(det => !det.habilitado);
+
+  //     setMovimientoSeleccionado({
+  //       ...movimientoCompleto,
+  //       detallesActivos,
+  //       detallesInactivos,
+  //       totalActivos: detallesActivos.length,
+  //       totalInactivos: detallesInactivos.length
+  //     });
+
+  //     setDetallesModal(true);
+  //     console.log(`✅ Detalles cargados para movimiento ${idMovimiento}`);
+
+  //   } catch (error) {
+  //     console.error(`❌ Error al cargar detalles:`, error);
+  //     alert('No se pudieron cargar los detalles del movimiento');
+  //   } finally {
+  //     setCargandoDetalles(false);
+  //   }
+  // };
+
+  const verDetallesMovimiento = async (idMovimiento) => {
+  setCargandoDetalles(true);
+  setMovimientoSeleccionado(null);
+
+  try {
+    console.log(`🔍 Buscando detalles del movimiento ${idMovimiento}...`);
+    const detalles = await movimientosService.getById(idMovimiento);
+
+    // FILTRAR SEGÚN EL CAMPO "habilitado" QUE VIENE EN LA RESPUESTA
+    const detallesActivos = detalles.filter(det => det.habilitado === true);
+    const detallesInactivos = detalles.filter(det => det.habilitado === false);
+
+    setMovimientoSeleccionado({
+      idMovimientoCab: idMovimiento,
+      detallesActivos,
+      detallesInactivos,
+      totalActivos: detallesActivos.length,
+      totalInactivos: detallesInactivos.length
+    });
+
+    setDetallesModal(true);
+    console.log(`✅ Detalles cargados:`, {
+      total: detalles.length,
+      activos: detallesActivos.length,
+      inactivos: detallesInactivos.length
+    });
+
+  } catch (error) {
+    console.error(`❌ Error al cargar detalles:`, error);
+    alert('No se pudieron cargar los detalles del movimiento');
+  } finally {
+    setCargandoDetalles(false);
+  }
+};
+>>>>>>> master
 
   const guardarMovimiento = async () => {
     if (detalles.length === 0) {
@@ -526,8 +667,12 @@ const MovimientosInventario = () => {
                     <tr
                       key={movimiento.id_movimiento_cab || movimiento.idMovimientoCab}
                       className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+<<<<<<< HEAD
                       //onClick={() => verDetallesMovimiento(movimiento.id_movimiento_cab || movimiento.idMovimientoCab)}
                       onClick={() => verDetallesMovimiento(movimiento)}
+=======
+                      onClick={() => verDetallesMovimiento(movimiento.id_movimiento_cab || movimiento.idMovimientoCab)}
+>>>>>>> master
                     >
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -619,6 +764,7 @@ const MovimientosInventario = () => {
                   </label>
                   <select
                     value={cabecera.entradaSalida}
+<<<<<<< HEAD
                     onChange={(e) => {
                       const nuevoTipo = parseInt(e.target.value);
                       setCabecera(prev => ({
@@ -659,6 +805,17 @@ const MovimientosInventario = () => {
                     </div>
                   )}
                  
+=======
+                    onChange={(e) => setCabecera(prev => ({
+                      ...prev,
+                      entradaSalida: parseInt(e.target.value)
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value={1}>Entrada</option>
+                    <option value={2}>Salida</option>
+                  </select>
+>>>>>>> master
                 </div>
 
                 {/* Fecha */}
@@ -727,6 +884,7 @@ const MovimientosInventario = () => {
                       type="number"
                       min="1"
                       step="1"
+<<<<<<< HEAD
                       max="9999"
                       value={detalleActual.cantidad}
                       onChange={(e) => {
@@ -746,6 +904,10 @@ const MovimientosInventario = () => {
                           e.preventDefault();
                         }
                       }}
+=======
+                      value={detalleActual.cantidad}
+                      onChange={(e) => handleInputChange('cantidad', e.target.value)}
+>>>>>>> master
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.cantidad
                         ? 'border-red-500 focus:ring-red-500'
                         : 'border-gray-300 focus:ring-green-500'
@@ -766,6 +928,7 @@ const MovimientosInventario = () => {
                       type="number"
                       step="0.01"
                       min="0"
+<<<<<<< HEAD
                       max="999.99"
                       value={detalleActual.precioCompra}
                       onChange={(e) => {
@@ -805,6 +968,15 @@ const MovimientosInventario = () => {
                         : 'border-gray-300 focus:ring-green-500'
                         } ${cabecera.entradaSalida === 2 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                       placeholder={cabecera.entradaSalida === 2 ? "1.00 (automático)" : "0.00"}
+=======
+                      value={detalleActual.precioCompra}
+                      onChange={(e) => handleInputChange('precioCompra', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.precioCompra
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:ring-green-500'
+                        }`}
+                      placeholder="0.00"
+>>>>>>> master
                     />
                     {errores.precioCompra && (
                       <p className="mt-1 text-xs text-red-600">{errores.precioCompra}</p>
@@ -820,6 +992,7 @@ const MovimientosInventario = () => {
                       type="number"
                       step="0.01"
                       min="0"
+<<<<<<< HEAD
                       max="999.99"
                       value={detalleActual.precioVenta}
                       onChange={(e) => {
@@ -859,6 +1032,15 @@ const MovimientosInventario = () => {
                         : 'border-gray-300 focus:ring-green-500'
                         } ${cabecera.entradaSalida === 2 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                       placeholder={cabecera.entradaSalida === 2 ? "1.00 (automático)" : "0.00"}
+=======
+                      value={detalleActual.precioVenta}
+                      onChange={(e) => handleInputChange('precioVenta', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.precioVenta
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:ring-green-500'
+                        }`}
+                      placeholder="0.00"
+>>>>>>> master
                     />
                     {errores.precioVenta && (
                       <p className="mt-1 text-xs text-red-600">{errores.precioVenta}</p>

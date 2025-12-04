@@ -5,6 +5,7 @@ export { default as ModalAgregarProveedor } from './ModalAgregarProveedor';
 export { default as ModalVenta } from './ModalVenta';
 export { default as ModalDescuento } from './ModalDescuento';
 export { default as ModalInventario } from './ModalInventario';
+export { default as ModalCategorias } from './ModalCategorias';
 export { default as ModalSelectorProductos } from './ModalSelectorProductos';
 
 // Modales de usuarios y seguridad
