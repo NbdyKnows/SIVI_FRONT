@@ -7,6 +7,7 @@
 export { default as httpClient, APIError } from './httpClient';
 export { default as authService } from './authService';
 export { default as productosService } from './productosService';
+export { default as categoriasService } from './categoriasService';
 export { default as usuariosService } from './usuariosService';
 export { default as ventasService } from './ventasService';
 export { default as inventarioService } from './inventarioService';
