@@ -124,24 +124,4 @@ const reportesService = {
   generarReporteFinanciero
 };
 
-<<<<<<< HEAD
-  } catch (error) {
-    console.error("Error financiero:", error);
-    if (error.response && error.response.status === 403) {
-        alert("Acceso denegado. Solo ADMIN tiene acceso a financieros.");
-    } else {
-        alert("Error al generar reporte financiero.");
-    }
-    throw error;
-  }
-};
-
-const reportesService = {
-  generarReporteDeVentas,
-  generarReporteInventario,
-  generarReporteFinanciero,
-};
-
-=======
->>>>>>> master
 export default reportesService;
