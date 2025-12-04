@@ -152,13 +152,13 @@ const Login = () => {
             )}
 
             {/* Demo Users Info */}
-            <div className="text-xs sm:text-sm">
+            {/* <div className="text-xs sm:text-sm">
               <div className="space-y-0.5">
                 <p>Admin: admin / admin123</p>
                 <p>Cajero: vendedor / vendedor123</p>
                 <p>Inventario: inventario / inventario123</p>
               </div>
-            </div>
+            </div> */}
 
             {/* Submit Button */}
             <button
