@@ -15,4 +15,6 @@ export const productosEndpoints = {
   enable: (id) => `${API_BASE_URL}/almacen/productos/${id}/enable`,
   search: `${API_BASE_URL}/almacen/productos/search`,
   byCategory: (categoria) => `${API_BASE_URL}/almacen/productos/categoria/${categoria}`,
+  listCatalogo:  `${API_BASE_URL}/almacen/productos/catalogoProductos`,
+  listCategorias:  `${API_BASE_URL}/almacen/productos/listaCategorias`,
 };

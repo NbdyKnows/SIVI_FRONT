@@ -12,6 +12,26 @@ const productosService = {
     }
   },
 
+  async getCategorias() {
+    try {
+      const productos = await httpClient.get(productosEndpoints.listCategorias);
+      return productos;
+    } catch (error) {
+      console.error('Error al obtener productos:', error);
+      throw error;
+    }
+  },
+
+  async getCatalogo() {
+    try {
+      const productos = await httpClient.get(productosEndpoints.listCatalogo);
+      return productos;
+    } catch (error) {
+      console.error('Error al obtener productos:', error);
+      throw error;
+    }
+  },
+
   async getById(id) {
     try {
       const producto = await httpClient.get(productosEndpoints.getById(id));

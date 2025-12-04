@@ -37,6 +37,20 @@ const inventarioService = {
   },
 
   /**
+   * Obtener todo el inventario
+   * GET /api/inventario
+   */
+  async getDetallePanelForCatalog() {
+    try {
+      const inventario = await httpClient.get(inventarioEndpoints.detallePanel);
+      return inventario;
+    } catch (error) {
+      console.error('Error al obtener inventario:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener inventario por ID
    * GET /api/inventario/:id
    */
