@@ -189,38 +189,11 @@ const Productos = () => {
     cargarProductos(); // Recargar productos para actualizar categorías
   };
 
-  // Si está cargando
-  if (cargando) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" style={{ color: '#3F7416' }} />
-          <p className="text-gray-600 text-sm">Cargando catálogo de productos...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Si hay error
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <h3 className="text-red-800 font-medium">Error al cargar productos</h3>
-          </div>
-          <p className="text-red-700 text-sm mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const getStockStatus = (stock) => {
+    if (stock <= 20) return { color: 'text-red-600', bg: 'bg-red-50', label: 'Bajo' };
+    if (stock <= 50) return { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Medio' };
+    return { color: 'text-green-600', bg: 'bg-green-50', label: 'Alto' };
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -231,7 +204,7 @@ const Productos = () => {
             Catálogo de Productos
           </h1>
           <p className="text-gray-600 mt-1">
-            {productos.length} productos en inventario
+            Visualiza el catálogo completo de productos del minimarket
           </p>
         </div>
         <button
@@ -258,22 +231,23 @@ const Productos = () => {
         </div>
       </div>
 
-      {/* Pestañas de categorías/estados */}
+      {/* Category Tabs */}
       <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory('Todas')}
-            className={`px-4 py-2 rounded-full transition-colors ${selectedCategory === 'Todas'
-              ? 'text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
+            className={`px-4 py-2 rounded-full transition-colors ${
+              selectedCategory === 'Todas'
+                ? 'text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
             style={{
               backgroundColor: selectedCategory === 'Todas' ? '#633416' : undefined
             }}
           >
-            Todos
+            Todas
           </button>
-          {categorias.map((categoria, index) => (
+          {categorias.map(categoria => (
             <button
               key={categoria.idCat}
               onClick={() => setSelectedCategory(categoria.descripcion)}
@@ -283,10 +257,10 @@ const Productos = () => {
                   : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
               style={{
-                backgroundColor: selectedCategory === categoria ? '#633416' : undefined
+                backgroundColor: selectedCategory === categoria.descripcion ? '#633416' : undefined
               }}
             >
-              {categoria}
+              {categoria.descripcion}
             </button>
           ))}
         </div>
