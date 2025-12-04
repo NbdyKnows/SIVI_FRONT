@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Percent, Tag, Calendar, Search, Package, Grid, AlertCircle, CheckCircle } from 'lucide-react';
-import { useDatabase } from '../../hooks/useDatabase';
+import { productosService, inventarioService, categoriasService } from '../../services';
 
 const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
-  const { getInventarioWithProductoAndCategoria, getCategorias } = useDatabase();
-  
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -20,32 +18,77 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState([]);
+  const [cargandoDatos, setCargandoDatos] = useState(false);
 
-  // Obtener datos reales de la base de datos
-  const inventarioData = getInventarioWithProductoAndCategoria();
-  const categoriasData = getCategorias();
+  // Cargar productos y categorías desde la API
+  useEffect(() => {
+    if (isOpen) {
+      cargarDatosAPI();
+    }
+  }, [isOpen]);
 
-  // Formatear productos para el modal (solo productos con stock)
-  const productosDisponibles = inventarioData
-    .filter(item => item.stock > 0)
-    .map(item => ({
-      id: item.id_producto,
-      nombre: item.producto,
-      categoria: item.categoria,
-      precio: item.precio,
-      stock: item.stock,
-      sku: item.sku
-    }));
+  const cargarDatosAPI = async () => {
+    setCargandoDatos(true);
+    try {
+      const [productos, inventario, categorias] = await Promise.all([
+        productosService.getAll(),
+        inventarioService.getAll(),
+        categoriasService.getAll()
+      ]);
 
-  // Formatear categorías para el modal
-  const categoriasDisponibles = categoriasData.map(categoria => {
-    const productosEnCategoria = productosDisponibles.filter(p => p.categoria === categoria.descripcion);
-    return {
-      id: categoria.id_cat,
-      nombre: categoria.descripcion,
-      productos_count: productosEnCategoria.length
-    };
-  }).filter(categoria => categoria.productos_count > 0); // Solo mostrar categorías con productos
+      // Crear mapa de inventario
+      const inventarioMap = {};
+      inventario.forEach(inv => {
+        if (inv.habilitado && inv.stock > 0) {
+          inventarioMap[inv.idProducto] = inv;
+        }
+      });
+
+      // Formatear productos con stock disponible
+      const productosFormateados = productos
+        .filter(p => p.habilitado && inventarioMap[p.idProducto])
+        .map(producto => {
+          const inv = inventarioMap[producto.idProducto];
+          return {
+            id: producto.idProducto,
+            nombre: producto.descripcion,
+            categoria: producto.categoria || 'Sin categoría',
+            precio: inv.precio || 0,
+            stock: inv.stock || 0,
+            sku: producto.codigo || `P${String(producto.idProducto).padStart(3, '0')}`
+          };
+        });
+
+      setProductosDisponibles(productosFormateados);
+
+      // Formatear categorías
+      const categoriasFormateadas = categorias.map(categoria => {
+        const productosEnCategoria = productosFormateados.filter(
+          p => p.categoria === categoria.descripcion
+        );
+        return {
+          id: categoria.idCat,
+          nombre: categoria.descripcion,
+          productos_count: productosEnCategoria.length
+        };
+      }).filter(cat => cat.productos_count > 0);
+
+      setCategoriasDisponibles(categoriasFormateadas);
+      
+      console.log('✅ Datos cargados:', {
+        productos: productosFormateados.length,
+        categorias: categoriasFormateadas.length
+      });
+    } catch (error) {
+      console.error('❌ Error al cargar datos:', error);
+      setProductosDisponibles([]);
+      setCategoriasDisponibles([]);
+    } finally {
+      setCargandoDatos(false);
+    }
+  };
 
   // Efecto para cargar datos del descuento si está editando
   useEffect(() => {
@@ -480,63 +523,90 @@ const ModalDescuento = ({ isOpen, onClose, onSave, descuento = null }) => {
 
             {/* Lista de selección */}
             <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-              {formData.tipo_aplicacion === 'producto' ? (
+              {cargandoDatos ? (
+                // Estado de carga
+                <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-3"></div>
+                  <p className="text-sm">Cargando datos...</p>
+                </div>
+              ) : formData.tipo_aplicacion === 'producto' ? (
                 // Lista de productos
                 <div className="divide-y divide-gray-200">
-                  {productosFiltrados.map((producto) => {
-                    const isSelected = formData.productos_seleccionados.some(p => p.id === producto.id);
-                    return (
-                      <label
-                        key={producto.id}
-                        className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleProductoToggle(producto)}
-                          className="w-4 h-4 rounded border-gray-300"
-                          style={{ accentColor: '#3F7416' }}
-                          disabled={isLoading}
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {producto.nombre}
-                            <span className="ml-2 text-xs text-gray-400">({producto.sku})</span>
+                  {productosFiltrados.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                      <Package className="w-12 h-12 mb-2 text-gray-300" />
+                      <p className="text-sm">
+                        {searchTerm ? 'No se encontraron productos' : 'No hay productos disponibles'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {!searchTerm && 'Verifica que haya productos con stock en el inventario'}
+                      </p>
+                    </div>
+                  ) : (
+                    productosFiltrados.map((producto) => {
+                      const isSelected = formData.productos_seleccionados.some(p => p.id === producto.id);
+                      return (
+                        <label
+                          key={producto.id}
+                          className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleProductoToggle(producto)}
+                            className="w-4 h-4 rounded border-gray-300"
+                            style={{ accentColor: '#3F7416' }}
+                            disabled={isLoading}
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {producto.nombre}
+                              <span className="ml-2 text-xs text-gray-400">({producto.sku})</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {producto.categoria} - S/ {producto.precio.toFixed(2)} 
+                              <span className="ml-2 text-green-600">Stock: {producto.stock}</span>
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {producto.categoria} - S/ {producto.precio.toFixed(2)} 
-                            <span className="ml-2 text-green-600">Stock: {producto.stock}</span>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
               ) : (
                 // Lista de categorías
                 <div className="divide-y divide-gray-200">
-                  {categoriasFiltradas.map((categoria) => {
-                    const isSelected = formData.categorias_seleccionadas.some(c => c.id === categoria.id);
-                    return (
-                      <label
-                        key={categoria.id}
-                        className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleCategoriaToggle(categoria)}
-                          className="w-4 h-4 rounded border-gray-300"
-                          style={{ accentColor: '#3F7416' }}
-                          disabled={isLoading}
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">{categoria.nombre}</div>
-                          <div className="text-xs text-gray-500">{categoria.productos_count} productos</div>
-                        </div>
-                      </label>
-                    );
-                  })}
+                  {categoriasFiltradas.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+                      <Grid className="w-12 h-12 mb-2 text-gray-300" />
+                      <p className="text-sm">
+                        {searchTerm ? 'No se encontraron categorías' : 'No hay categorías disponibles'}
+                      </p>
+                    </div>
+                  ) : (
+                    categoriasFiltradas.map((categoria) => {
+                      const isSelected = formData.categorias_seleccionadas.some(c => c.id === categoria.id);
+                      return (
+                        <label
+                          key={categoria.id}
+                          className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleCategoriaToggle(categoria)}
+                            className="w-4 h-4 rounded border-gray-300"
+                            style={{ accentColor: '#3F7416' }}
+                            disabled={isLoading}
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">{categoria.nombre}</div>
+                            <div className="text-xs text-gray-500">{categoria.productos_count} productos</div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>

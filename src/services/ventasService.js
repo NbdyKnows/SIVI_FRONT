@@ -158,6 +158,62 @@ const ventasService = {
       throw error;
     }
   },
+
+  /**
+   * Calcular descuentos aplicables a productos en el carrito
+   * POST /api/ventas/calcular-descuentos
+   * 
+   * @param {Object} data - Datos para calcular descuentos
+   * @param {Array} data.productos - Array de productos con {id_producto, id_categoria, cantidad, precio_unitario}
+   * @returns {Object} - { productos[], subtotal, total_descuentos, total_final }
+   * 
+   * @example
+   * const resultado = await ventasService.calcularDescuentos({
+   *   productos: [
+   *     {
+   *       id_producto: 5,
+   *       id_categoria: 2,
+   *       cantidad: 2,
+   *       precio_unitario: 3500.00
+   *     }
+   *   ]
+   * });
+   * 
+   * // Response:
+   * {
+   *   productos: [
+   *     {
+   *       id_producto: 5,
+   *       cantidad: 2,
+   *       precio_unitario: 3500.00,
+   *       subtotal_producto: 7000.00,
+   *       oferta_aplicada: {
+   *         id_oferta: 3,
+   *         descripcion: "20% en Laptops HP",
+   *         tipo: "Producto",
+   *         descuento_porcentaje: 20.00
+   *       },
+   *       descuento_aplicado: 1400.00,
+   *       total_producto: 5600.00
+   *     }
+   *   ],
+   *   subtotal: 7000.00,
+   *   total_descuentos: 1400.00,
+   *   total_final: 5600.00
+   * }
+   */
+  async calcularDescuentos(data) {
+    try {
+      const resultado = await httpClient.post(
+        ventasEndpoints.calcularDescuentos,
+        data
+      );
+      return resultado;
+    } catch (error) {
+      console.error('Error al calcular descuentos:', error);
+      throw error;
+    }
+  },
 };
 
 export default ventasService;

@@ -18,6 +18,8 @@ export { inventarioEndpoints } from './endpoints/inventarioEndpoints';
 export { proveedoresEndpoints } from './endpoints/proveedoresEndpoints';
 export { clientesEndpoints } from './endpoints/clientesEndpoints';
 export { descuentosEndpoints } from './endpoints/descuentosEndpoints';
+export { ofertasEndpoints } from './endpoints/ofertasEndpoints';
+export { tipoOfertaEndpoints } from './endpoints/tipoOfertaEndpoints';
 export { cajaChicaEndpoints } from './endpoints/cajaChicaEndpoints';
 export { reportesEndpoints } from './endpoints/reportesEndpoints';
 export { movimientosEndpoints } from './endpoints/movimientosEndpoints';
@@ -35,6 +37,8 @@ import { inventarioEndpoints } from './endpoints/inventarioEndpoints';
 import { proveedoresEndpoints } from './endpoints/proveedoresEndpoints';
 import { clientesEndpoints } from './endpoints/clientesEndpoints';
 import { descuentosEndpoints } from './endpoints/descuentosEndpoints';
+import { ofertasEndpoints } from './endpoints/ofertasEndpoints';
+import { tipoOfertaEndpoints } from './endpoints/tipoOfertaEndpoints';
 import { cajaChicaEndpoints } from './endpoints/cajaChicaEndpoints';
 import { reportesEndpoints } from './endpoints/reportesEndpoints';
 import { movimientosEndpoints } from './endpoints/movimientosEndpoints';
@@ -49,6 +53,8 @@ export const API_ENDPOINTS = {
   proveedores: proveedoresEndpoints,
   clientes: clientesEndpoints,
   descuentos: descuentosEndpoints,
+  ofertas: ofertasEndpoints,
+  tipoOferta: tipoOfertaEndpoints,
   cajaChica: cajaChicaEndpoints,
   reportes: reportesEndpoints,
   movimiento: movimientosEndpoints
