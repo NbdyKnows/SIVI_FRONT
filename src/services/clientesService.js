@@ -51,8 +51,6 @@ const clientesService = {
   },
 
   /**
-<<<<<<< HEAD
-=======
    * Obtener un cliente por DNI
    * GET /api/clientes/dni/:dni
    */
@@ -161,17 +159,12 @@ const clientesService = {
   },
 
   /**
->>>>>>> master
    * Crear un nuevo cliente
    * POST /api/clientes
    * 
    * @param {Object} cliente - Datos del cliente
    * @param {string} cliente.dni - DNI del cliente
-<<<<<<< HEAD
-   * @param {string} cliente.nombre - Nombre completo
-=======
    * @param {string} cliente.nombres - Nombre completo
->>>>>>> master
    * @param {string} cliente.telefono - Teléfono (opcional)
    * @param {string} cliente.email - Email (opcional)
    */
