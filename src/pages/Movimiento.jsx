@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import database from '../data/database.json';
 import PaginacionTabla from '../components/PaginacionTabla';
 import movimientosService from '../services/movimientosService';
-import productosService from '../services/productosService'; 
+import productosService from '../services/productosService';
 
 const MovimientosInventario = () => {
   const navigate = useNavigate();
@@ -52,58 +52,58 @@ const MovimientosInventario = () => {
     usuario: 'admin'
   });
 
-const cargarDatos = async () => {
-      try {
-        // 1. Cargar movimientos desde el backend
-        const dataMovimientos = await movimientosService.getAll(0); // 0 para Entradas
-        console.log('Movimientos cargados desde API:', dataMovimientos);
+  const cargarDatos = async () => {
+    try {
+      // 1. Cargar movimientos desde el backend
+      const dataMovimientos = await movimientosService.getAll(0); // 0 para Entradas
+      console.log('Movimientos cargados desde API:', dataMovimientos);
 
-        // Mapear los datos del backend a la estructura que espera tu componente
-        const movimientosMapeados = dataMovimientos.map(mov => ({
-          id_movimiento_cab: mov.idMovimientoCab,
-          codigo: mov.codigo,
-          usuario: mov.usuario,
-          entrada_salida: mov.tipoMovimiento === 'ENTRADA' ? 1 : 2,
-          fecha: new Date().toISOString(), // Ajusta según lo que devuelva el backend
-          //detalles: [], // El backend solo devuelve cabecera, no detalles
-          cantidadProductos: mov.cantidadProductos,
-          habilitado: true
-        }));
+      // Mapear los datos del backend a la estructura que espera tu componente
+      const movimientosMapeados = dataMovimientos.map(mov => ({
+        id_movimiento_cab: mov.idMovimientoCab,
+        codigo: mov.codigo,
+        usuario: mov.usuario,
+        entrada_salida: mov.tipoMovimiento === 'ENTRADA' ? 1 : 2,
+        fecha: new Date().toISOString(), // Ajusta según lo que devuelva el backend
+        //detalles: [], // El backend solo devuelve cabecera, no detalles
+        cantidadProductos: mov.cantidadProductos,
+        habilitado: true
+      }));
 
-        setMovimientos(movimientosMapeados);
-        setMovimientosFiltrados(movimientosMapeados);
+      setMovimientos(movimientosMapeados);
+      setMovimientosFiltrados(movimientosMapeados);
 
-        // 2. Cargar productos DESDE EL BACKEND
-        console.log('🔄 Cargando productos del backend...');
-        const productosBackend = await productosService.getAll();
-        console.log('✅ Productos cargados:', productosBackend.length);
+      // 2. Cargar productos DESDE EL BACKEND
+      console.log('🔄 Cargando productos del backend...');
+      const productosBackend = await productosService.getAll();
+      console.log('✅ Productos cargados:', productosBackend.length);
 
-        // Mapear productos del backend a la estructura que espera tu componente
-        const productosMapeados = productosBackend.map(producto => ({
-          id_producto: producto.idProducto || producto.id,
-          codigo: producto.codigo || '',
-          descripcion: producto.descripcion || producto.nombre || '',
-          // Agrega otros campos que necesites
-          precio_compra: producto.precioCompra || 0,
-          precio_venta: producto.precioVenta || 0,
-          stock: producto.stock || 0,
-          habilitado: producto.habilitado !== false
-        })).sort((a, b) => a.descripcion.localeCompare(b.descripcion)); // <-- ORDENAR AQUÍ
+      // Mapear productos del backend a la estructura que espera tu componente
+      const productosMapeados = productosBackend.map(producto => ({
+        id_producto: producto.idProducto || producto.id,
+        codigo: producto.codigo || '',
+        descripcion: producto.descripcion || producto.nombre || '',
+        // Agrega otros campos que necesites
+        precio_compra: producto.precioCompra || 0,
+        precio_venta: producto.precioVenta || 0,
+        stock: producto.stock || 0,
+        habilitado: producto.habilitado !== false
+      })).sort((a, b) => a.descripcion.localeCompare(b.descripcion)); // <-- ORDENAR AQUÍ
 
-        setProductos(productosMapeados);
+      setProductos(productosMapeados);
 
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-        // Si hay error, carga datos locales como respaldo
-        const movimientosData = database.movimiento_cab || [];
-        setMovimientos(movimientosData);
-        setMovimientosFiltrados(movimientosData);
-        setProductos(database.producto || []);
-      }
-    };
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      // Si hay error, carga datos locales como respaldo
+      const movimientosData = database.movimiento_cab || [];
+      setMovimientos(movimientosData);
+      setMovimientosFiltrados(movimientosData);
+      setProductos(database.producto || []);
+    }
+  };
 
   useEffect(() => {
-    
+
 
     cargarDatos();
   }, []);
@@ -165,13 +165,17 @@ const cargarDatos = async () => {
     const producto = productos.find(p => p.id_producto === parseInt(detalleActual.idProducto));
     if (!producto) return;
 
+    // Si es Salida, usar precio 1
+    const precioCompra = cabecera.entradaSalida === 2 ? 1 : parseFloat(detalleActual.precioCompra);
+    const precioVenta = cabecera.entradaSalida === 2 ? 1 : parseFloat(detalleActual.precioVenta);
+
     const nuevoDetalle = {
       id: Date.now(), // ID temporal para React
       idProducto: parseInt(detalleActual.idProducto),
       producto: producto.descripcion,
       cantidad: parseFloat(detalleActual.cantidad),
-      precioCompra: parseFloat(detalleActual.precioCompra),
-      precioVenta: parseFloat(detalleActual.precioVenta)
+      precioCompra: precioCompra,
+      precioVenta: precioVenta
     };
 
     setDetalles(prev => [...prev, nuevoDetalle]);
@@ -180,8 +184,8 @@ const cargarDatos = async () => {
     setDetalleActual({
       idProducto: '',
       cantidad: '',
-      precioCompra: '',
-      precioVenta: ''
+      precioCompra: cabecera.entradaSalida === 2 ? '1' : '', // Mantener 1 si es Salida
+      precioVenta: cabecera.entradaSalida === 2 ? '1' : ''   // Mantener 1 si es Salida
     });
 
     // Limpiar errores
@@ -268,72 +272,50 @@ const cargarDatos = async () => {
     }
   };
 
-  // Función para ver detalles de un movimiento
-  // const verDetallesMovimiento = async (idMovimiento) => {
-  //   setCargandoDetalles(true);
-  //   setMovimientoSeleccionado(null);
 
-  //   try {
-  //     console.log(`🔍 Buscando detalles del movimiento ${idMovimiento}...`);
-  //     const movimientoCompleto = await movimientosService.getById(idMovimiento);
+  const verDetallesMovimiento = async (cabeceraMovimiento) => {
+    setCargandoDetalles(true);
+    setMovimientoSeleccionado(null);
 
-  //     // Mapear los detalles para mostrar
-  //     const detallesActivos = movimientoCompleto.detalles.filter(det => det.habilitado);
-  //     const detallesInactivos = movimientoCompleto.detalles.filter(det => !det.habilitado);
+    try {
+      const idMovimiento = cabeceraMovimiento.id_movimiento_cab || cabeceraMovimiento.idMovimientoCab;
 
-  //     setMovimientoSeleccionado({
-  //       ...movimientoCompleto,
-  //       detallesActivos,
-  //       detallesInactivos,
-  //       totalActivos: detallesActivos.length,
-  //       totalInactivos: detallesInactivos.length
-  //     });
+      console.log(`🔍 Buscando detalles del movimiento ${idMovimiento}...`);
+      const detalles = await movimientosService.getById(idMovimiento);
 
-  //     setDetallesModal(true);
-  //     console.log(`✅ Detalles cargados para movimiento ${idMovimiento}`);
+      // FILTRAR SEGÚN EL CAMPO "habilitado" QUE VIENE EN LA RESPUESTA
+      const detallesActivos = detalles.filter(det => det.habilitado === true);
+      const detallesInactivos = detalles.filter(det => det.habilitado === false);
 
-  //   } catch (error) {
-  //     console.error(`❌ Error al cargar detalles:`, error);
-  //     alert('No se pudieron cargar los detalles del movimiento');
-  //   } finally {
-  //     setCargandoDetalles(false);
-  //   }
-  // };
+      // COMBINAR CABECERA Y DETALLES
+      setMovimientoSeleccionado({
+        // Información de la cabecera (de la fila clickeada)
+        idMovimientoCab: idMovimiento,
+        codigo: cabeceraMovimiento.codigo || 'N/A',
+        entradaSalida: cabeceraMovimiento.entrada_salida ||
+          (cabeceraMovimiento.tipoMovimiento === 'ENTRADA' ? 1 : 2) || 1,
+        fecha: cabeceraMovimiento.fecha || new Date().toISOString(),
+        idUsuario: cabeceraMovimiento.usuario ||
+          cabeceraMovimiento.id_usuario || 'N/A',
+        habilitado: cabeceraMovimiento.habilitado !== false,
 
-  const verDetallesMovimiento = async (idMovimiento) => {
-  setCargandoDetalles(true);
-  setMovimientoSeleccionado(null);
+        // Detalles del backend
+        detallesActivos,
+        detallesInactivos,
+        totalActivos: detallesActivos.length,
+        totalInactivos: detallesInactivos.length
+      });
 
-  try {
-    console.log(`🔍 Buscando detalles del movimiento ${idMovimiento}...`);
-    const detalles = await movimientosService.getById(idMovimiento);
+      setDetallesModal(true);
+      console.log(`✅ Detalles cargados:`, movimientoSeleccionado);
 
-    // FILTRAR SEGÚN EL CAMPO "habilitado" QUE VIENE EN LA RESPUESTA
-    const detallesActivos = detalles.filter(det => det.habilitado === true);
-    const detallesInactivos = detalles.filter(det => det.habilitado === false);
-
-    setMovimientoSeleccionado({
-      idMovimientoCab: idMovimiento,
-      detallesActivos,
-      detallesInactivos,
-      totalActivos: detallesActivos.length,
-      totalInactivos: detallesInactivos.length
-    });
-
-    setDetallesModal(true);
-    console.log(`✅ Detalles cargados:`, {
-      total: detalles.length,
-      activos: detallesActivos.length,
-      inactivos: detallesInactivos.length
-    });
-
-  } catch (error) {
-    console.error(`❌ Error al cargar detalles:`, error);
-    alert('No se pudieron cargar los detalles del movimiento');
-  } finally {
-    setCargandoDetalles(false);
-  }
-};
+    } catch (error) {
+      console.error(`❌ Error al cargar detalles:`, error);
+      alert('No se pudieron cargar los detalles del movimiento');
+    } finally {
+      setCargandoDetalles(false);
+    }
+  };
 
   const guardarMovimiento = async () => {
     if (detalles.length === 0) {
@@ -544,7 +526,8 @@ const cargarDatos = async () => {
                     <tr
                       key={movimiento.id_movimiento_cab || movimiento.idMovimientoCab}
                       className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                      onClick={() => verDetallesMovimiento(movimiento.id_movimiento_cab || movimiento.idMovimientoCab)}
+                      //onClick={() => verDetallesMovimiento(movimiento.id_movimiento_cab || movimiento.idMovimientoCab)}
+                      onClick={() => verDetallesMovimiento(movimiento)}
                     >
 
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -636,15 +619,46 @@ const cargarDatos = async () => {
                   </label>
                   <select
                     value={cabecera.entradaSalida}
-                    onChange={(e) => setCabecera(prev => ({
-                      ...prev,
-                      entradaSalida: parseInt(e.target.value)
-                    }))}
+                    onChange={(e) => {
+                      const nuevoTipo = parseInt(e.target.value);
+                      setCabecera(prev => ({
+                        ...prev,
+                        entradaSalida: nuevoTipo
+                      }));
+
+                      // Si es Salida, setear precios a 1 y bloquear
+                      if (nuevoTipo === 2) {
+                        setDetalleActual(prev => ({
+                          ...prev,
+                          precioCompra: '1',
+                          precioVenta: '1'
+                        }));
+                      } else {
+                        // Si es Entrada, resetear precios
+                        setDetalleActual(prev => ({
+                          ...prev,
+                          precioCompra: '',
+                          precioVenta: ''
+                        }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
+                  > 
+                  
                     <option value={1}>Entrada</option>
                     <option value={2}>Salida</option>
                   </select>
+                  {/* Después del select, agrega esto: */} 
+                  {cabecera.entradaSalida === 2 && (
+                    <div className="md:col-span-2">
+                      <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Nota:</strong> En movimientos de Salida, los precios no cuentan
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                 
                 </div>
 
                 {/* Fecha */}
@@ -713,8 +727,25 @@ const cargarDatos = async () => {
                       type="number"
                       min="1"
                       step="1"
+                      max="9999"
                       value={detalleActual.cantidad}
-                      onChange={(e) => handleInputChange('cantidad', e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Validar que no sea mayor a 999
+                        if (value && parseInt(value) > 9999) {
+                          // Puedes mantenerlo en 999 o mostrar error
+                          handleInputChange('cantidad', '9999');
+                        } else {
+                          handleInputChange('cantidad', value);
+                        }
+                      }}
+                      onKeyPress={(e) => {
+                        // Prevenir que escriban más de 3 dígitos manualmente
+                        const currentValue = e.target.value + e.key;
+                        if (currentValue.length > 4 || parseInt(currentValue) > 9999) {
+                          e.preventDefault();
+                        }
+                      }}
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.cantidad
                         ? 'border-red-500 focus:ring-red-500'
                         : 'border-gray-300 focus:ring-green-500'
@@ -735,13 +766,45 @@ const cargarDatos = async () => {
                       type="number"
                       step="0.01"
                       min="0"
+                      max="999.99"
                       value={detalleActual.precioCompra}
-                      onChange={(e) => handleInputChange('precioCompra', e.target.value)}
+                      onChange={(e) => {
+                        // Si es Salida, no permitir cambios
+                        if (cabecera.entradaSalida === 2) return;
+
+                        let value = e.target.value;
+
+                        if (value === '') {
+                          handleInputChange('precioCompra', value);
+                          return;
+                        }
+
+                        const numValue = parseFloat(value);
+
+                        if (isNaN(numValue)) {
+                          handleInputChange('precioCompra', '');
+                          return;
+                        }
+
+                        if (numValue > 999.99) {
+                          handleInputChange('precioCompra', '999.99');
+                          return;
+                        }
+
+                        if (numValue < 0) {
+                          handleInputChange('precioCompra', '0');
+                          return;
+                        }
+
+                        const fixedValue = Math.round(numValue * 100) / 100;
+                        handleInputChange('precioCompra', fixedValue.toString());
+                      }}
+                      disabled={cabecera.entradaSalida === 2} // BLOQUEADO si es Salida
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.precioCompra
                         ? 'border-red-500 focus:ring-red-500'
                         : 'border-gray-300 focus:ring-green-500'
-                        }`}
-                      placeholder="0.00"
+                        } ${cabecera.entradaSalida === 2 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      placeholder={cabecera.entradaSalida === 2 ? "1.00 (automático)" : "0.00"}
                     />
                     {errores.precioCompra && (
                       <p className="mt-1 text-xs text-red-600">{errores.precioCompra}</p>
@@ -757,13 +820,45 @@ const cargarDatos = async () => {
                       type="number"
                       step="0.01"
                       min="0"
+                      max="999.99"
                       value={detalleActual.precioVenta}
-                      onChange={(e) => handleInputChange('precioVenta', e.target.value)}
+                      onChange={(e) => {
+                        // Si es Salida, no permitir cambios
+                        if (cabecera.entradaSalida === 2) return;
+
+                        let value = e.target.value;
+
+                        if (value === '') {
+                          handleInputChange('precioVenta', value);
+                          return;
+                        }
+
+                        const numValue = parseFloat(value);
+
+                        if (isNaN(numValue)) {
+                          handleInputChange('precioVenta', '');
+                          return;
+                        }
+
+                        if (numValue > 999.99) {
+                          handleInputChange('precioVenta', '999.99');
+                          return;
+                        }
+
+                        if (numValue < 0) {
+                          handleInputChange('precioVenta', '0');
+                          return;
+                        }
+
+                        const fixedValue = Math.round(numValue * 100) / 100;
+                        handleInputChange('precioVenta', fixedValue.toString());
+                      }}
+                      disabled={cabecera.entradaSalida === 2} // BLOQUEADO si es Salida
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errores.precioVenta
                         ? 'border-red-500 focus:ring-red-500'
                         : 'border-gray-300 focus:ring-green-500'
-                        }`}
-                      placeholder="0.00"
+                        } ${cabecera.entradaSalida === 2 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      placeholder={cabecera.entradaSalida === 2 ? "1.00 (automático)" : "0.00"}
                     />
                     {errores.precioVenta && (
                       <p className="mt-1 text-xs text-red-600">{errores.precioVenta}</p>
