@@ -75,6 +75,7 @@ const Usuarios = () => {
   // Funciones para manejar modales
   const handleCrearUsuario = async (nuevoUsuario) => {
     try {
+      // nuevoUsuario ya viene con el formato correcto: { usuario, nombre, idRol }
       await usuariosService.create(nuevoUsuario);
       await cargarUsuarios(); // Recargar lista
       setModalCrearUsuario(false);
