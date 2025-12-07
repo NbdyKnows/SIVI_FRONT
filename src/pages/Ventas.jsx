@@ -1,541 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Percent } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useProductos, useCarrito, useVentaProcess } from '../hooks/ventas';
 import { ModalVenta, ModalCliente } from '../components/modales';
 import BusquedaProductos from '../components/BusquedaProductos';
 import TablaProductos from '../components/TablaProductos';
 import ComprobantePago from '../components/ComprobantePago';
-import ventasService from '../services/ventasService';
-import inventarioService from '../services/inventarioService';
-import { ofertasService } from '../services';
-import clientesService from '../services/clientesService';
-import productosService from '../services/productosService';
-import { generarTicketPDF } from '../utils/generarTicketPDF';
 
 const Ventas = () => {
   const { data: database, updateInventario } = useDatabase();
   const { user } = useAuth();
+
+  // Estados locales
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVendedor, setSelectedVendedor] = useState('');
-  const [productosVenta, setProductosVenta] = useState([]);
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [cantidadSeleccionada, setCantidadSeleccionada] = useState(1);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [showModal, setShowModal] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ventaExitosa, setVentaExitosa] = useState(false);
-  const [clienteDNI, setClienteDNI] = useState('');
-  const [showClienteModal, setShowClienteModal] = useState(false);
-  const [productosConDescuento, setProductosConDescuento] = useState([]);
-  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-  const [aplicaDescuentoFidelidad, setAplicaDescuentoFidelidad] = useState(false);
-  const [porcentajeDescuentoFidelidad, setPorcentajeDescuentoFidelidad] = useState(0);
-  const [ventaCreadaData, setVentaCreadaData] = useState(null);
-  const [productosDisponibles, setProductosDisponibles] = useState([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  
-  // Estados adicionales para descuentos automáticos
-  const [mostrarDescuentoFidelidad, setMostrarDescuentoFidelidad] = useState(false);
 
-  // Función para verificar descuento de fidelidad desde el backend
-  const verificarDescuentoFidelidad = async (idCliente) => {
-    if (!idCliente) {
-      setAplicaDescuentoFidelidad(false);
-      setPorcentajeDescuentoFidelidad(0);
-      return;
-    }
-    
-    try {
-      const { aplicaDescuentoFidelidad, porcentaje } = await clientesService.verificarDescuentoFidelidad(idCliente);
-      setAplicaDescuentoFidelidad(aplicaDescuentoFidelidad);
-      setPorcentajeDescuentoFidelidad(porcentaje || 0);
-    } catch (error) {
-      console.error('Error al verificar descuento de fidelidad:', error);
-      setAplicaDescuentoFidelidad(false);
-      setPorcentajeDescuentoFidelidad(0);
-    }
-  };
+  // Custom hooks para gestión de productos
+  const {
+    productos,
+    productosFiltrados,
+    isLoading: isLoadingProducts
+  } = useProductos(searchTerm, database);
 
-  // Función para obtener descuentos activos desde el backend
-  const obtenerDescuentosActivos = async () => {
-    try {
-      const ofertas = await ofertasService.getVigentes();
-      return ofertas;
-    } catch (error) {
-      console.warn('⚠️ Error al obtener ofertas del backend:', error);
-      return [];
-    }
-  };
+  // Custom hook para gestión del carrito
+  const {
+    items: productosVenta,
+    productoSeleccionado,
+    cantidadSeleccionada,
+    setCantidadSeleccionada,
+    agregarProducto: agregarProductoAlCarrito,
+    quitarProducto,
+    editarCantidad: editarCantidadProducto,
+    seleccionarProducto,
+    limpiarCarrito,
+    subtotal,
+    descuentoProductos,
+    descuentoFidelidad: descuentoFidelidadMonto,
+    igv,
+    total
+  } = useCarrito(false, 0); // Estos valores se actualizarán con el hook de proceso
 
-  // Función para aplicar descuentos a productos usando el endpoint
-  const aplicarDescuentosAProductos = async (productos) => {
-    try {
-      // Preparar datos para el endpoint calcular-descuentos
-      const productosParaCalculo = productos.map(p => ({
-        id_producto: p.idProducto || p.id_producto,
-        id_categoria: p.id_cat,
-        cantidad: 1, // Solo para obtener descuento, la cantidad se aplica después
-        precio_unitario: p.precio_venta
-      }));
+  // Custom hook para procesamiento de ventas
+  const {
+    cliente: clienteSeleccionado,
+    clienteDNI,
+    setClienteDNI,
+    aplicaDescuentoFidelidad,
+    porcentajeDescuentoFidelidad,
+    mostrarDescuentoFidelidad,
+    showModal,
+    showClienteModal,
+    setShowClienteModal,
+    isProcessing,
+    ventaExitosa,
+    selectedVendedor,
+    setSelectedVendedor,
+    guardarCliente,
+    procesarVenta,
+    imprimirComprobante,
+    cerrarModal
+  } = useVentaProcess(
+    productosVenta,
+    { subtotal, descuentoProductos, descuentoFidelidad: descuentoFidelidadMonto, igv, total },
+    user,
+    updateInventario,
+    database,
+    limpiarCarrito,
+    metodoPago
+  );
 
-      // Llamar al endpoint para calcular descuentos
-      const resultado = await ventasService.calcularDescuentos({
-        productos: productosParaCalculo
-      });
-
-      console.log('💰 Descuentos calculados:', resultado);
-
-      // Mapear resultado a productos
-      return productos.map((producto, index) => {
-        const productoConDescuento = resultado.productos[index];
-        const ofertaAplicada = productoConDescuento?.oferta_aplicada;
-
-        return {
-          ...producto,
-          descuento: ofertaAplicada ? {
-            id_oferta: ofertaAplicada.id_oferta,
-            nombre: ofertaAplicada.descripcion,
-            tipo: ofertaAplicada.tipo,
-            tipo_descuento: 'porcentaje'
-          } : null,
-          descuento_valor: ofertaAplicada?.descuento_porcentaje || 0,
-          precio_con_descuento: ofertaAplicada 
-            ? producto.precio_venta * (1 - ofertaAplicada.descuento_porcentaje / 100)
-            : producto.precio_venta
-        };
-      });
-    } catch (error) {
-      console.error('❌ Error al calcular descuentos:', error);
-      // Si falla, devolver productos sin descuento
-      return productos.map(p => ({
-        ...p,
-        descuento: null,
-        descuento_valor: 0,
-        precio_con_descuento: p.precio_venta
-      }));
-    }
-  };
-
-  // Cargar productos desde la API
-  const cargarProductosDesdeAPI = async () => {
-    setIsLoadingProducts(true);
-    try {
-      // Cargar productos e inventario en paralelo
-      const [productos, inventario] = await Promise.all([
-        productosService.getAll(),
-        inventarioService.getAll()
-      ]);
-      
-      console.log('📦 Productos cargados:', productos);
-      console.log('📊 Inventario cargado:', inventario);
-      
-      // Crear mapa de inventario para búsqueda rápida
-      const inventarioMap = {};
-      inventario.forEach(inv => {
-        if (inv.habilitado) {
-          inventarioMap[inv.idProducto] = inv;
-        }
-      });
-
-      // Transformar estructura de API a estructura esperada
-      const productosFormateados = productos
-        .filter(p => p.habilitado)
-        .map(producto => {
-          const inv = inventarioMap[producto.idProducto];
-          
-          // Si no hay inventario o stock es 0, no incluir el producto
-          if (!inv || !inv.stock || inv.stock <= 0) {
-            return null;
-          }
-
-          return {
-            id_producto: producto.idProducto,
-            idProducto: producto.idProducto,
-            nombre: producto.descripcion,
-            descripcion: producto.descripcion,
-            stock: inv.stock || 0,
-            precio_venta: inv.precio || 0,
-            codigo: producto.codigo || `P${String(producto.idProducto).padStart(3, '0')}`,
-            categoria: producto.categoria || 'Sin categoría',
-            id_cat: producto.idCat,
-            habilitado: true
-          };
-        })
-        .filter(p => p !== null);
-
-      console.log('✅ Productos formateados:', productosFormateados);
-
-      // Aplicar descuentos
-      const productosConDesc = await aplicarDescuentosAProductos(productosFormateados);
-      setProductosDisponibles(productosConDesc);
-      setProductosConDescuento(productosConDesc);
-    } catch (error) {
-      console.error('❌ Error al cargar productos desde API:', error);
-      // Fallback a JSON local si falla la API
-      console.warn('⚠️ Usando productos del JSON local como fallback');
-      cargarProductosDesdeJSON();
-    } finally {
-      setIsLoadingProducts(false);
-    }
-  };
-
-  // Fallback: Cargar productos desde JSON local
-  const cargarProductosDesdeJSON = async () => {
-    if (!database?.producto) return;
-    
-    const productos = database.producto.filter(p => p.habilitado).map(producto => {
-      const inventario = database?.inventario?.find(inv => inv.id_producto === producto.id_producto && inv.habilitado);
-      const categoria = database?.producto_cat?.find(c => c.id_cat === producto.id_cat);
-      return {
-        id_producto: producto.id_producto,
-        idProducto: producto.id_producto,
-        stock: inventario?.stock || 0,
-        precio_venta: inventario?.precio || 0,
-        codigo: `P${String(producto.id_producto).padStart(3, '0')}`,
-        nombre: producto.descripcion,
-        descripcion: producto.descripcion,
-        categoria: categoria?.descripcion || 'Sin categoría',
-        habilitado: true
-      };
-    }).filter(p => p.stock > 0);
-
-    const productosConDesc = await aplicarDescuentosAProductos(productos);
-    setProductosDisponibles(productosConDesc);
-    setProductosConDescuento(productosConDesc);
-  };
-
-  // Buscar productos con autocomplete
-  const buscarProductos = async (query) => {
-    if (!query || query.trim().length < 1) {
-      // Si no hay búsqueda, mostrar todos los productos disponibles
-      setProductosConDescuento(productosDisponibles);
-      return;
-    }
-
-    try {
-      // Obtener productos e inventario
-      const [resultados, inventario] = await Promise.all([
-        productosService.search(query),
-        inventarioService.getAll()
-      ]);
-      
-      console.log('🔍 Resultados búsqueda:', resultados);
-      
-      // Crear mapa de inventario
-      const inventarioMap = {};
-      inventario.forEach(inv => {
-        if (inv.habilitado) {
-          inventarioMap[inv.idProducto] = inv;
-        }
-      });
-      
-      // Transformar y filtrar resultados
-      const productosFormateados = resultados
-        .filter(p => p.habilitado)
-        .map(producto => {
-          const inv = inventarioMap[producto.idProducto];
-          
-          // Si no hay inventario o stock es 0, no incluir
-          if (!inv || !inv.stock || inv.stock <= 0) {
-            return null;
-          }
-
-          return {
-            id_producto: producto.idProducto,
-            idProducto: producto.idProducto,
-            nombre: producto.descripcion,
-            descripcion: producto.descripcion,
-            stock: inv.stock || 0,
-            precio_venta: inv.precio || 0,
-            codigo: producto.codigo || `P${String(producto.idProducto).padStart(3, '0')}`,
-            categoria: producto.categoria || 'Sin categoría',
-            id_cat: producto.idCat,
-            habilitado: true
-          };
-        })
-        .filter(p => p !== null);
-
-      console.log('✅ Productos encontrados:', productosFormateados);
-
-      const productosConDesc = await aplicarDescuentosAProductos(productosFormateados);
-      setProductosConDescuento(productosConDesc);
-    } catch (error) {
-      console.error('❌ Error al buscar productos:', error);
-      // Fallback a búsqueda local
-      const resultadosLocales = productosDisponibles.filter(p =>
-        p.nombre?.toLowerCase().includes(query.toLowerCase()) ||
-        p.codigo?.toLowerCase().includes(query.toLowerCase()) ||
-        p.categoria?.toLowerCase().includes(query.toLowerCase())
-      );
-      setProductosConDescuento(resultadosLocales);
-    }
-  };
-
-  // Cargar productos al montar el componente
-  useEffect(() => {
-    cargarProductosDesdeAPI();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Efecto para búsqueda con debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm) {
-        buscarProductos(searchTerm);
-      } else {
-        setProductosConDescuento(productosDisponibles);
-      }
-    }, 200); // Debounce de 200ms para respuesta más rápida
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
-
-  // Filtrar productos por búsqueda
-  const productosFiltrados = productosConDescuento;
-
-  // Seleccionar producto para agregar
-  const seleccionarProducto = (producto) => {
-    setProductoSeleccionado(producto);
-    setCantidadSeleccionada(1);
-  };
-
-  // Agregar producto con cantidad específica
+  // Wrapper para agregar producto que también limpia el término de búsqueda
   const agregarProducto = () => {
-    if (!productoSeleccionado) return;
-    
-    const stockDisponible = productoSeleccionado.stock;
-    const productoExistente = productosVenta.find(p => p.id_producto === productoSeleccionado.id_producto);
-    const cantidadExistente = productoExistente ? productoExistente.cantidad : 0;
-    
-    if (cantidadExistente + cantidadSeleccionada > stockDisponible) {
-      alert(`Stock insuficiente. Disponible: ${stockDisponible - cantidadExistente}`);
-      return;
-    }
-
-    if (productoExistente) {
-      setProductosVenta(prev => 
-        prev.map(p => 
-          p.id_producto === productoSeleccionado.id_producto 
-            ? { ...p, cantidad: p.cantidad + cantidadSeleccionada }
-            : p
-        )
-      );
-    } else {
-      setProductosVenta(prev => [...prev, {
-        ...productoSeleccionado,
-        cantidad: cantidadSeleccionada
-      }]);
-    }
-    
-    // Limpiar selección
-    setProductoSeleccionado(null);
-    setCantidadSeleccionada(1);
+    agregarProductoAlCarrito();
     setSearchTerm('');
-  };
-
-  // Quitar producto de la venta
-  const quitarProducto = (idProducto) => {
-    setProductosVenta(prev => prev.filter(p => p.id_producto !== idProducto));
-  };
-
-  // Editar cantidad de producto en la venta
-  const editarCantidadProducto = (idProducto, nuevaCantidad) => {
-    setProductosVenta(prev => 
-      prev.map(p => 
-        p.id_producto === idProducto 
-          ? { ...p, cantidad: nuevaCantidad }
-          : p
-      )
-    );
-  };
-
-  // Calcular subtotal sin IGV y descuentos por productos
-  const subtotal = productosVenta.reduce((sum, producto) => {
-    const precioFinal = producto.precio_con_descuento || producto.precio_venta;
-    const precioSinIGV = precioFinal / 1.18; // Precio sin IGV
-    return sum + (precioSinIGV * producto.cantidad);
-  }, 0);
-  
-  // Calcular descuento total por productos
-  const descuentoProductos = productosVenta.reduce((sum, producto) => {
-    if (producto.descuento_valor && producto.precio_venta > (producto.precio_con_descuento || producto.precio_venta)) {
-      const descuentoPorUnidad = producto.precio_venta - (producto.precio_con_descuento || producto.precio_venta);
-      return sum + (descuentoPorUnidad * producto.cantidad);
-    }
-    return sum;
-  }, 0);
-  
-  // Calcular descuento de fidelidad sobre el subtotal
-  const descuentoFidelidadMonto = aplicaDescuentoFidelidad ? (subtotal * porcentajeDescuentoFidelidad / 100) : 0;
-  
-  // Calcular IGV sobre el subtotal con descuento de fidelidad aplicado
-  const subtotalConDescuentoFidelidad = subtotal - descuentoFidelidadMonto;
-  const igv = subtotalConDescuentoFidelidad * 0.18;
-  
-  // Total final
-  const total = subtotalConDescuentoFidelidad + igv;
-
-  // Procesar venta y generar comprobante
-  const procesarVenta = async () => {
-    if (productosVenta.length === 0) {
-      alert('Agregue productos a la venta');
-      return;
-    }
-
-    if (!selectedVendedor) {
-      alert('Seleccione un vendedor');
-      return;
-    }
-
-    // Mostrar modal de procesamiento
-    setShowModal(true);
-    setIsProcessing(true);
-    setVentaExitosa(false);
-
-    try {
-      // Preparar datos de venta
-      const ventaData = {
-        idUsuario: user?.id_usuario || user?.idUsuario,
-        idCliente: clienteSeleccionado?.idCliente || clienteSeleccionado?.id || null,
-        descuentoTotal: descuentoFidelidadMonto + descuentoProductos,
-        subtotal: subtotal,
-        igv: igv,
-        total: total,
-        detalles: productosVenta.map(p => {
-          return {
-            idProducto: p.id_producto,
-            idOferta: p.descuento?.id_oferta || null, // ✅ Incluir id_oferta
-            descuentoItem: p.descuento_valor || 0,
-            precio: p.precio_venta,
-            cantidad: p.cantidad
-          };
-        })
-      };
-
-      console.log('📤 Enviando venta al backend:', ventaData);
-
-      // Enviar venta al backend
-      const ventaCreada = await ventasService.create(ventaData);
-      
-      console.log('✅ Venta procesada exitosamente:', ventaCreada);
-      
-      // Guardar datos de la venta creada para el ticket
-      setVentaCreadaData(ventaCreada);
-      
-      // Actualizar stock localmente para sincronización inmediata
-      const inventarioActualizado = { ...database };
-      productosVenta.forEach(producto => {
-        const inventarioActual = inventarioActualizado?.inventario?.find(
-          inv => inv.id_producto === producto.id_producto && inv.habilitado
-        );
-        if (inventarioActual) {
-          const nuevoStock = inventarioActual.stock - producto.cantidad;
-          updateInventario(producto.id_producto, inventarioActual.id_movimiento_cab, nuevoStock, inventarioActual.precio);
-        }
-      });
-      
-      // Mostrar éxito
-      setIsProcessing(false);
-      setVentaExitosa(true);
-      
-    } catch (error) {
-      console.error('❌ Error procesando venta:', error);
-      
-      // Guardar en localStorage como fallback
-      console.warn('Guardando venta en localStorage como respaldo...');
-      const ventaData = {
-        id: Date.now(),
-        fecha: new Date().toISOString(),
-        vendedor: selectedVendedor,
-        cliente: clienteDNI || 'Sin registro',
-        productos: productosVenta.map(p => {
-          const precioFinal = p.precio_con_descuento || p.precio_venta;
-          return {
-            id_producto: p.id_producto,
-            nombre: p.nombre,
-            cantidad: p.cantidad,
-            precio_unitario: p.precio_venta,
-            precio_con_descuento: precioFinal,
-            descuento_aplicado: p.descuento ? {
-              nombre: p.descuento.nombre,
-              tipo: p.descuento.tipo_descuento,
-              valor: p.descuento_valor
-            } : null,
-            subtotal: (precioFinal / 1.18) * p.cantidad,
-            igv: ((precioFinal / 1.18) * 0.18) * p.cantidad,
-            total: precioFinal * p.cantidad
-          };
-        }),
-        subtotal: subtotal,
-        igv: igv,
-        descuento_productos: descuentoProductos,
-        descuento_fidelidad: {
-          porcentaje: porcentajeDescuentoFidelidad,
-          monto: descuentoFidelidadMonto
-        },
-        total: total,
-        metodoPago: metodoPago
-      };
-
-      const ventasExistentes = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-      ventasExistentes.push(ventaData);
-      localStorage.setItem('sivi_ventas', JSON.stringify(ventasExistentes));
-      
-      // Actualizar stock local
-      const inventarioActualizado = { ...database };
-      productosVenta.forEach(producto => {
-        const inventarioActual = inventarioActualizado?.inventario?.find(
-          inv => inv.id_producto === producto.id_producto && inv.habilitado
-        );
-        if (inventarioActual) {
-          const nuevoStock = inventarioActual.stock - producto.cantidad;
-          updateInventario(producto.id_producto, inventarioActual.id_movimiento_cab, nuevoStock, inventarioActual.precio);
-          inventarioActual.stock = nuevoStock;
-        }
-      });
-      localStorage.setItem('sivi_inventario_temp', JSON.stringify(inventarioActualizado.inventario));
-      
-      alert('Venta guardada localmente. Sincronizar con el servidor cuando esté disponible.');
-      setIsProcessing(false);
-      setVentaExitosa(true);
-    }
-  };
-
-  // Cerrar modal y limpiar formulario
-  const cerrarModal = () => {
-    setShowModal(false);
-    setIsProcessing(false);
-    setVentaExitosa(false);
-    
-    // Limpiar formulario
-    setProductosVenta([]);
-    setSearchTerm('');
-    setClienteDNI('');
-    setClienteSeleccionado(null);
-    setVentaCreadaData(null);
-  };
-
-  // Manejar modal de cliente
-  const abrirModalCliente = () => {
-    setShowClienteModal(true);
-  };
-
-  const cerrarModalCliente = () => {
-    setShowClienteModal(false);
-  };
-
-  const guardarCliente = async (cliente) => {
-    console.log('Cliente seleccionado:', cliente);
-    setClienteDNI(cliente.dni || cliente.numeroDocumento);
-    setClienteSeleccionado(cliente);
-    setShowClienteModal(false);
-    
-    // Verificar descuento de fidelidad
-    if (cliente.idCliente || cliente.id) {
-      await verificarDescuentoFidelidad(cliente.idCliente || cliente.id);
-    }
   };
 
   // Función para limpiar datos de prueba (desarrollo)
@@ -544,117 +82,19 @@ const Ventas = () => {
       localStorage.removeItem('sivi_ventas');
       localStorage.removeItem('sivi_inventario_temp');
       console.log('%c🧹 Datos de prueba limpiados - Stock restaurado', 'color: #ff6b6b; font-weight: bold;');
-      // Recargar la página para refrescar el inventario
       window.location.reload();
     }
   };
 
-  // Imprimir comprobante
-  const imprimirComprobante = () => {
-    if (!ventaCreadaData) {
-      console.error('No hay datos de venta para imprimir');
-      alert('Error: No se encontraron datos de la venta');
-      return;
-    }
-
-    try {
-      // Crear fecha formateada para el nombre del archivo (usar fecha actual si hay error)
-      const ahora = new Date();
-      const fechaFormato = ahora.toISOString()
-        .replace(/[-:]/g, '')
-        .replace('T', '_')
-        .split('.')[0]; // YYYYMMDD_HHMMSS
-
-      // Generar el ticket PDF
-      generarTicketPDF({
-        codigo: ventaCreadaData.codigo,
-        fecha: ventaCreadaData.fechaVenta || new Date().toISOString(),
-        vendedor: selectedVendedor,
-        clienteNombre: clienteSeleccionado?.nombres || clienteSeleccionado?.nombre || 'Sin registro',
-        clienteDNI: clienteDNI || 'Sin registro',
-        productos: productosVenta.map(p => ({
-          nombre: p.nombre,
-          cantidad: p.cantidad,
-          precio_unitario: p.precio_venta,
-          precio_con_descuento: p.precio_con_descuento || p.precio_venta,
-          descuento_aplicado: p.descuento ? {
-            nombre: p.descuento.nombre,
-            tipo: p.descuento.tipo_descuento,
-            valor: p.descuento_valor
-          } : null
-        })),
-        subtotal: subtotal,
-        igv: igv,
-        descuento_productos: descuentoProductos,
-        descuento_fidelidad: {
-          porcentaje: porcentajeDescuentoFidelidad,
-          monto: descuentoFidelidadMonto
-        },
-        total: total,
-        metodoPago: metodoPago,
-        fechaFormato: fechaFormato
-      });
-
-      console.log('✅ Ticket PDF generado exitosamente');
-    } catch (error) {
-      console.error('❌ Error al generar ticket PDF:', error);
-      alert('Error al generar el ticket. Por favor intente nuevamente.');
-    }
-    
-    cerrarModal();
+  // Abrir modal de cliente
+  const abrirModalCliente = () => {
+    setShowClienteModal(true);
   };
 
-  // Actualizar descuento de fidelidad cuando cambie el cliente
-  useEffect(() => {
-    const actualizarDescuento = async () => {
-      if (clienteSeleccionado?.idCliente) {
-        await verificarDescuentoFidelidad(clienteSeleccionado.idCliente);
-        setMostrarDescuentoFidelidad(aplicaDescuentoFidelidad);
-      } else {
-        setAplicaDescuentoFidelidad(false);
-        setPorcentajeDescuentoFidelidad(0);
-        setMostrarDescuentoFidelidad(false);
-      }
-    };
-    
-    actualizarDescuento();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteSeleccionado]);
-
-  // Inicializar vendedor actual automáticamente
-  useEffect(() => {
-    if (user) {
-      setSelectedVendedor(user.username || '');
-    }
-  }, [user]);
-
-  // Cargar y mostrar estadísticas de ventas al iniciar
-  useEffect(() => {
-    const ventas = JSON.parse(localStorage.getItem('sivi_ventas') || '[]');
-    const inventarioTemp = JSON.parse(localStorage.getItem('sivi_inventario_temp') || '[]');
-    
-    if (ventas.length > 0) {
-      console.log(`%c📊 SISTEMA SIVI - ${ventas.length} venta(s) registrada(s)`, 'color: #3F7416; font-weight: bold; font-size: 14px;');
-      
-      // Mostrar resumen de ventas del día
-      const ventasHoy = ventas.filter(v => {
-        const fechaVenta = new Date(v.fecha).toDateString();
-        const hoy = new Date().toDateString();
-        return fechaVenta === hoy;
-      });
-      
-      if (ventasHoy.length > 0) {
-        const totalVentasHoy = ventasHoy.reduce((sum, v) => sum + v.total, 0);
-        console.log(`%c💰 Ventas de hoy: ${ventasHoy.length} - Total: S/ ${totalVentasHoy.toFixed(2)}`, 'color: #633416; font-weight: bold;');
-      }
-    }
-    
-    if (inventarioTemp.length > 0) {
-      console.log(`%c📦 Stock actualizado por ventas - ${inventarioTemp.length} productos afectados`, 'color: #666666;');
-    }
-  }, []);
-
-
+  // Cerrar modal de cliente
+  const cerrarModalCliente = () => {
+    setShowClienteModal(false);
+  };
 
   // Loading state
   if (isLoadingProducts) {
@@ -800,8 +240,6 @@ const Ventas = () => {
         ventaExitosa={ventaExitosa}
         onClose={cerrarModal}
         onImprimir={imprimirComprobante}
-        clienteDNI={clienteDNI}
-        montoTotal={productosVenta.reduce((sum, p) => sum + (p.precio_venta * p.cantidad), 0)}
       />
     </div>
   );
