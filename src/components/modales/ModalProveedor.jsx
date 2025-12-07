@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import proveedoresService from '../../services/proveedoresService';
 
 const ModalProveedor = ({ isOpen, onClose, onSave, proveedor = null }) => {
   const [formData, setFormData] = useState({
@@ -77,25 +78,30 @@ const ModalProveedor = ({ isOpen, onClose, onSave, proveedor = null }) => {
     setIsLoading(true);
     
     try {
-      // Simular delay de guardado
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
       const proveedorData = {
-        ...(proveedor && { id_proveedor: proveedor.id_proveedor }),
         descripcion: formData.descripcion.trim(),
         telefono: formData.telefono.trim(),
         habilitado: formData.habilitado
       };
 
-      // Si es nuevo proveedor, agregar ID temporal
-      if (!proveedor) {
-        proveedorData.id_proveedor = Date.now();
+      let resultado;
+      
+      if (proveedor) {
+        // Actualizar proveedor existente
+        resultado = await proveedoresService.update(proveedor.id_proveedor || proveedor.idProveedor, proveedorData);
+      } else {
+        // Crear nuevo proveedor
+        resultado = await proveedoresService.create(proveedorData);
       }
 
-      onSave(proveedorData);
+      onSave(resultado);
+      handleClose();
       
     } catch (error) {
       console.error('Error al guardar proveedor:', error);
+      setErrors({
+        general: error.message || 'Error al guardar el proveedor. Por favor, intenta nuevamente.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +140,14 @@ const ModalProveedor = ({ isOpen, onClose, onSave, proveedor = null }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Error general */}
+          {errors.general && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-red-700">{errors.general}</p>
+            </div>
+          )}
+
           {/* Nombre del Proveedor */}
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: '#666666' }}>

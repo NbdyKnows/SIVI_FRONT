@@ -66,12 +66,12 @@ const Login = () => {
           {/* Logo */}
           <div className="text-center mb-8 lg:mb-10">
             <div className="flex justify-center mb-4">
-                <img 
-                  src={logo} 
-                  alt="Minimarket Los Robles Logo" 
+                <img
+                  src={logo}
+                  alt="Minimarket Los Robles Logo"
                   className="h-10 sm:h-12 w-auto object-contain"
                 />
-              
+
             </div>
             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent px-2">Minimarket Los Robles</h1>
           </div>

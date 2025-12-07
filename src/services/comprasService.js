@@ -1,109 +1,102 @@
-/**
- * Servicio de Compras
- * 
- * Implementa todos los endpoints de la API de compras del backend
- */
-
-import httpClient from './httpClient';
-import { comprasEndpoints } from '../config/api';
+import authService from './authService';
+import { API_BASE_URL } from '../config/appConfig';
+import { comprasEndpoints } from '../config/endpoints/comprasEndpoints';
 
 const comprasService = {
-  /**
-   * Obtener todas las compras
-   * GET /api/compras
-   */
-  async getAll() {
+
+  _getHeaders: () => {
+    const token = authService.getAccessToken();
+    if (!token || token === 'local_token') {
+      throw new Error('Debes iniciar sesión para realizar operaciones de compra.');
+    }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  },
+
+  _request: async (endpoint, options = {}) => {
     try {
-      const compras = await httpClient.get(comprasEndpoints.getAll);
-      return compras;
+      const url = `${API_BASE_URL}${endpoint}`;
+      
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.message || errorJson.error || `Error ${response.status}`);
+        } catch (e) {
+          if (e.message.startsWith('Error')) throw e;
+          throw new Error(`Error del servidor (${response.status}): ${errorText}`);
+        }
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        return await response.json();
+      } else {
+        return await response.text();
+      }
+
     } catch (error) {
-      console.error('Error al obtener compras:', error);
+      console.error('Error en comprasService:', error);
       throw error;
     }
   },
 
   /**
-   * Obtener una compra por ID
-   * GET /api/compras/:id
+   * Registrar una nueva Orden de Compra (Estado: Pendiente)
+   * @param {Object} compraDTO - Estructura: { idUsuario, idProveedor, detalles: [...] }
    */
-  async getById(id) {
-    try {
-      const compra = await httpClient.get(comprasEndpoints.getById(id));
-      return compra;
-    } catch (error) {
-      console.error(`Error al obtener compra ${id}:`, error);
-      throw error;
-    }
+  registrarCompra: async (compraDTO) => {
+    return comprasService._request(comprasEndpoints.registrar, {
+      method: 'POST',
+      headers: comprasService._getHeaders(),
+      body: JSON.stringify(compraDTO)
+    });
   },
 
   /**
-   * Crear una nueva compra
-   * POST /api/compras
-   * 
-   * @param {Object} compra - Datos de la compra
-   * @param {number} compra.id_proveedor - ID del proveedor
-   * @param {Array} compra.productos - Array de productos a comprar
-   * @param {string} compra.observaciones - Observaciones de la compra
+   * Aprobar una Orden de Compra
+   * @param {number} idOrden
    */
-  async create(compra) {
-    try {
-      const nuevaCompra = await httpClient.post(
-        comprasEndpoints.create,
-        compra
-      );
-      return nuevaCompra;
-    } catch (error) {
-      console.error('Error al crear compra:', error);
-      throw error;
-    }
+  aprobarCompra: async (idOrden) => {
+    return comprasService._request(comprasEndpoints.aprobar(idOrden), {
+      method: 'PUT',
+      headers: comprasService._getHeaders()
+    });
   },
 
   /**
-   * Actualizar una compra
-   * PUT /api/compras/:id
+   * Listar todas las ordenes habilitadas
    */
-  async update(id, compra) {
-    try {
-      const compraActualizada = await httpClient.put(
-        comprasEndpoints.update(id),
-        compra
-      );
-      return compraActualizada;
-    } catch (error) {
-      console.error(`Error al actualizar compra ${id}:`, error);
-      throw error;
-    }
+  listarCompras: async () => {
+    return comprasService._request(comprasEndpoints.lista, {
+      method: 'GET',
+      headers: comprasService._getHeaders()
+    });
   },
 
   /**
-   * Eliminar una compra
-   * DELETE /api/compras/:id
+   * Buscar una orden por ID
    */
-  async delete(id) {
-    try {
-      const resultado = await httpClient.delete(comprasEndpoints.delete(id));
-      return resultado;
-    } catch (error) {
-      console.error(`Error al eliminar compra ${id}:`, error);
-      throw error;
-    }
+  buscarPorId: async (id) => {
+    return comprasService._request(comprasEndpoints.buscarPorId(id), {
+      method: 'GET',
+      headers: comprasService._getHeaders()
+    });
   },
 
   /**
-   * Obtener compras por proveedor
-   * GET /api/compras/proveedor/:proveedorId
+   * Anular una orden
    */
-  async getByProveedor(proveedorId) {
-    try {
-      const compras = await httpClient.get(
-        comprasEndpoints.byProveedor(proveedorId)
-      );
-      return compras;
-    } catch (error) {
-      console.error(`Error al obtener compras del proveedor ${proveedorId}:`, error);
-      throw error;
-    }
-  },
+  anularCompra: async (id) => {
+    return comprasService._request(comprasEndpoints.deshabilitar(id), {
+      method: 'PUT',
+      headers: comprasService._getHeaders()
+    });
+  }
 };
 
 export default comprasService;

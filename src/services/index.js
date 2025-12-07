@@ -15,6 +15,8 @@ export { default as comprasService } from './comprasService';
 export { default as proveedoresService } from './proveedoresService';
 export { default as clientesService } from './clientesService';
 export { default as descuentosService } from './descuentosService';
+export { default as ofertasService } from './ofertasService';
+export { default as tipoOfertaService } from './tipoOfertaService';
 export { default as cajaChicaService } from './cajaChicaService';
 export { default as movimientosService } from './movimientosService';
 export { default as reportesService } from './reportesService';

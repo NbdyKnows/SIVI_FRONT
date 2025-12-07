@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Percent, Tag, Calendar, TrendingDown, Edit, Trash2, Plus, Package, Grid, Eye } from 'lucide-react';
 import { ModalDescuento } from '../components/modales';
-import { descuentosService } from '../services';
+import { ofertasService } from '../services';
 
 const Descuentos = () => {
   const [descuentos, setDescuentos] = useState([]);
@@ -20,16 +20,35 @@ const Descuentos = () => {
   useEffect(() => {
     cargarDescuentos();
     cargarEstadisticas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cargarDescuentos = async () => {
     try {
       setCargando(true);
-      const data = await descuentosService.getAll();
-      setDescuentos(data);
-      console.log('✅ Descuentos cargados desde el backend:', data.length);
+      const data = await ofertasService.getAll();
+      
+      // Transformar ofertas al formato esperado por el componente
+      const ofertasFormateadas = data.map(oferta => ({
+        id: oferta.id_oferta,
+        id_oferta: oferta.id_oferta,
+        nombre: oferta.descripcion,
+        descripcion: oferta.descripcion,
+        tipo_aplicacion: oferta.id_tipo_oferta === 1 ? 'producto' : oferta.id_tipo_oferta === 2 ? 'categoria' : 'general',
+        tipo_descuento: 'porcentaje',
+        valor: oferta.descuento,
+        fecha_inicio: oferta.fecha_inicio,
+        fecha_fin: oferta.fecha_fin,
+        productos_seleccionados: oferta.id_tipo_oferta === 1 && oferta.id ? [{ id: oferta.id }] : [],
+        categorias_seleccionadas: oferta.id_tipo_oferta === 2 && oferta.id ? [{ id: oferta.id }] : [],
+        activo: oferta.vigente,
+        fecha_creacion: oferta.fecha_inicio
+      }));
+      
+      setDescuentos(ofertasFormateadas);
+      console.log('✅ Ofertas cargadas desde el backend:', ofertasFormateadas.length);
     } catch (error) {
-      console.error('❌ Error al cargar descuentos del backend, usando localStorage:', error);
+      console.error('❌ Error al cargar ofertas del backend, usando localStorage:', error);
       // Fallback a localStorage
       const descuentosGuardados = localStorage.getItem('descuentos_sivi');
       if (descuentosGuardados) {
@@ -82,12 +101,21 @@ const Descuentos = () => {
 
   const cargarEstadisticas = async () => {
     try {
-      const stats = await descuentosService.getEstadisticas();
-      setEstadisticas(stats);
+      // Obtener ofertas vigentes y próximas a vencer
+      const [vigentes, proximasVencer] = await Promise.all([
+        ofertasService.getVigentes(),
+        ofertasService.getProximasVencer(7)
+      ]);
+      
+      setEstadisticas({
+        activos: vigentes.length,
+        productosConDescuento: vigentes.filter(o => o.id_tipo_oferta === 1).length,
+        ahorroTotal: 0, // No disponible en el nuevo sistema
+        proximosVencer: proximasVencer.length
+      });
       console.log('✅ Estadísticas cargadas desde el backend');
     } catch (error) {
       console.warn('⚠️ Error al cargar estadísticas del backend, calculando localmente:', error);
-      // Calcular estadísticas localmente como fallback
       calcularEstadisticasLocales();
     }
   };
@@ -136,27 +164,39 @@ const Descuentos = () => {
 
   const handleGuardarDescuento = async (descuentoData) => {
     try {
+      // Transformar datos al formato de ofertas
+      const ofertaData = {
+        id_tipo_oferta: descuentoData.tipo_aplicacion === 'producto' ? 1 : 
+                       descuentoData.tipo_aplicacion === 'categoria' ? 2 : 3,
+        id: descuentoData.tipo_aplicacion === 'producto' && descuentoData.productos_seleccionados.length > 0 
+            ? descuentoData.productos_seleccionados[0].id 
+            : descuentoData.tipo_aplicacion === 'categoria' && descuentoData.categorias_seleccionadas.length > 0
+            ? descuentoData.categorias_seleccionadas[0].id
+            : null,
+        descripcion: descuentoData.nombre,
+        fecha_inicio: descuentoData.fecha_inicio,
+        fecha_fin: descuentoData.fecha_fin,
+        descuento: parseFloat(descuentoData.valor)
+      };
+
       if (descuentoSeleccionado) {
-        // Editar descuento existente
-        const descuentoActualizado = await descuentosService.update(
-          descuentoSeleccionado.id, 
-          descuentoData
+        // Editar oferta existente
+        await ofertasService.update(
+          descuentoSeleccionado.id_oferta || descuentoSeleccionado.id, 
+          ofertaData
         );
-        const nuevosDescuentos = descuentos.map(d => 
-          d.id === descuentoSeleccionado.id ? descuentoActualizado : d
-        );
-        setDescuentos(nuevosDescuentos);
-        console.log('✅ Descuento actualizado en el backend');
+        cargarDescuentos(); // Recargar lista completa
+        console.log('✅ Oferta actualizada en el backend');
       } else {
-        // Crear nuevo descuento
-        const nuevoDescuento = await descuentosService.create(descuentoData);
-        setDescuentos([...descuentos, nuevoDescuento]);
-        console.log('✅ Descuento creado en el backend');
+        // Crear nueva oferta
+        await ofertasService.create(ofertaData);
+        cargarDescuentos(); // Recargar lista completa
+        console.log('✅ Oferta creada en el backend');
       }
       // Recargar estadísticas
       cargarEstadisticas();
     } catch (error) {
-      console.error('❌ Error al guardar descuento en el backend, usando localStorage:', error);
+      console.error('❌ Error al guardar oferta en el backend, usando localStorage:', error);
       // Fallback a localStorage
       if (descuentoSeleccionado) {
         const nuevosDescuentos = descuentos.map(d => 
@@ -174,16 +214,16 @@ const Descuentos = () => {
   };
 
   const handleEliminarDescuento = async (id) => {
-    if (window.confirm('¿Está seguro de que desea eliminar este descuento?')) {
+    if (window.confirm('¿Está seguro de que desea eliminar esta oferta?')) {
       try {
-        await descuentosService.delete(id);
+        await ofertasService.delete(id);
         const nuevosDescuentos = descuentos.filter(d => d.id !== id);
         setDescuentos(nuevosDescuentos);
-        console.log('✅ Descuento eliminado del backend');
+        console.log('✅ Oferta eliminada del backend');
         // Recargar estadísticas
         cargarEstadisticas();
       } catch (error) {
-        console.error('❌ Error al eliminar descuento del backend, usando localStorage:', error);
+        console.error('❌ Error al eliminar oferta del backend, usando localStorage:', error);
         // Fallback a localStorage
         const nuevosDescuentos = descuentos.filter(d => d.id !== id);
         guardarDescuentos(nuevosDescuentos);

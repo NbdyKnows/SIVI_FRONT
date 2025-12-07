@@ -34,7 +34,7 @@ export const generarTicketPDF = (ventaData) => {
   
   const info = [
     'RUC: 20123456789',
-    'Av. Los Robles 123, Lima',
+    'Jr Arica - Chosica, Lima',
     'Tel: (01) 234-5678',
     'www.losrobles.com'
   ];

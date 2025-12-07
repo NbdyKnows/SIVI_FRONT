@@ -77,14 +77,11 @@ const ModalCrearUsuario = ({ isOpen, onClose, onSave }) => {
       // Simular delay de guardado
       await new Promise(resolve => setTimeout(resolve, 800));
       
+      // Enviar solo los campos requeridos por el backend
       const newUser = {
-        id_usuario: Math.max(...data.usuario.map(u => u.id_usuario)) + 1,
-        nombre: formData.nombre.trim(),
         usuario: formData.usuario.trim(),
-        id_rol: parseInt(formData.id_rol),
-        contrasenia: null, // Sin contraseña inicialmente - el usuario la creará
-        habilitado: formData.habilitado,
-        reset: true // Marcar que necesita crear contraseña
+        nombre: formData.nombre.trim(),
+        idRol: parseInt(formData.id_rol)
       };
 
       onSave(newUser);

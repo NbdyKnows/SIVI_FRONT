@@ -15,4 +15,7 @@ export const ventasEndpoints = {
   byVendedor: (vendedorId) => `${API_BASE_URL}/ventas/vendedor/${vendedorId}`,
   estadisticasVendedor: (vendedorId) => `${API_BASE_URL}/ventas/vendedor/${vendedorId}/estadisticas`,
   statistics: `${API_BASE_URL}/ventas/estadisticas`,
+  
+  // Endpoint de integración con ofertas
+  calcularDescuentos: `${API_BASE_URL}/ventas/calcular-descuentos`,
 };

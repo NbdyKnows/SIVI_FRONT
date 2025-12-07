@@ -1,5 +1,5 @@
 /**
- * Endpoints de Descuentos
+ * Endpoints de Descuentos (Sistema Antiguo)
  */
 
 import { API_BASE_URL } from '../apiConfig';
