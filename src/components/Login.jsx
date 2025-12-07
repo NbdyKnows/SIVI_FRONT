@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import loginImage from '../assets/login.png';
-import logo from '../assets/logo.png';
+import logo from '../assets/sivi_logo.jpg';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     id: '',
     password: ''
@@ -36,7 +36,7 @@ const Login = () => {
     try {
       // Login es ahora asíncrono y usa JWT
       const result = await login(formData);
-      
+
       if (result.success) {
         // Navegar según el rol del usuario
         const userRole = result.user.role;
@@ -66,12 +66,16 @@ const Login = () => {
           {/* Logo */}
           <div className="text-center mb-8 lg:mb-10">
             <div className="flex justify-center mb-4">
-                <img
+              {/* <img
                   src={logo}
                   alt="Minimarket Los Robles Logo"
                   className="h-10 sm:h-12 w-auto object-contain"
-                />
-
+                /> */}
+           <img
+  src={logo}
+  alt="Minimarket Los Robles Logo"
+  className="h-16 sm:h-24 w-auto object-contain rounded-3xl"
+/>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent px-2">Minimarket Los Robles</h1>
           </div>
@@ -96,7 +100,7 @@ const Login = () => {
                   value={formData.id}
                   onChange={handleInputChange}
                   className="block w-full pl-3 sm:pl-4 pr-14 sm:pr-16 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 text-sm sm:text-base transition-all duration-200 placeholder-gray-400"
-                  style={{ 
+                  style={{
                     color: '#633416'
                   }}
                   placeholder="Introduce tu identificación"
@@ -135,7 +139,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   className="block w-full pl-3 sm:pl-4 pr-18 sm:pr-20 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 text-sm sm:text-base transition-all duration-200 placeholder-gray-400"
-                  style={{ 
+                  style={{
                     color: '#633416'
                   }}
                   placeholder="Introduce tu contraseña"
@@ -165,7 +169,7 @@ const Login = () => {
               type="submit"
               disabled={isLoading}
               className="w-full text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-green-200 transition-all duration-200 mt-6 sm:mt-8 text-sm sm:text-base transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              style={{ 
+              style={{
                 background: 'linear-gradient(135deg, #3F7416 0%, #2F5A10 100%)'
               }}
             >
@@ -185,9 +189,9 @@ const Login = () => {
       {/* Right side - Image */}
       <div className="hidden lg:flex lg:w-2/3 bg-gradient-to-tl from-green-50 to-blue-50 items-center justify-center relative overflow-hidden animate-slide-in-right">
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-white/40"></div>
-        <img 
-          src={loginImage} 
-          alt="Login illustration" 
+        <img
+          src={loginImage}
+          alt="Login illustration"
           className="max-w-full max-h-full object-contain relative z-10 drop-shadow-lg"
         />
       </div>
