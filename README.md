@@ -1,21 +1,75 @@
 # SIVI - Sistema de Inventario y Ventas Integrado
 
-Sistema web para la gestión integral de un minimarket, desarrollado con React + Vite, que incluye gestión de ventas, inventario, compras, usuarios y reportes.
+Sistema web para la gestión integral de un minimarket, desarrollado con React + Vite, que incluye gestión de ventas, inventario, compras, usuarios, reportes y asistente de chat con IA.
+
+## 🚀 Tecnologías
+
+### Frontend
+- **React 19.1.1** - Librería UI con componentes funcionales
+- **Vite 7.1.7** - Build tool de última generación
+- **Tailwind CSS 4.1.13** - Framework CSS utility-first
+- **React Router DOM 7.9.2** - Enrutamiento SPA
+
+### HTTP y Autenticación
+- **Axios 1.13.2** - Cliente HTTP
+- **JWT Decode 4.0.0** - Decodificación de tokens JWT
+- **httpClient** personalizado con interceptores
+
+### Generación de Documentos
+- **jsPDF 3.0.4** - Generación de PDFs
+- **jspdf-autotable 5.0.2** - Tablas en PDFs
+
+### UI/UX
+- **Lucide React 0.544.0** - Iconos SVG optimizados
+- **PostCSS 8.5.6** - Procesamiento CSS
+
+### Desarrollo
+- **ESLint 9.36.0** - Linter de código
+- **Vite Plugin React 5.0.3** - Soporte JSX y HMR
+
+---
+
+## ⚡ Inicio Rápido
+
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/NbdyKnows/SIVI_FRONT.git
+cd SIVI_FRONT
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Configurar modo (opcional - por defecto es DEVELOPMENT)
+# Editar src/config/appConfig.js línea 10:
+# export const APP_MODE = 'LOCAL';  // Para desarrollo sin backend
+
+# 4. Iniciar servidor de desarrollo
+npm run dev
+
+# 5. Abrir en navegador: http://localhost:5173
+# Usuario: admin | Contraseña: admin123
+```
+
+**Nota**: En modo `LOCAL` no necesitas backend, todos los datos se guardan en localStorage.
 
 ---
 
 ## 📋 Tabla de Contenidos
 
 1. [Instalación y Configuración](#-instalación-y-configuración)
-2. [Requisitos del Sistema](#-requisitos-del-sistema)
+2. [Requisitos del Sistema](#️-requisitos-del-sistema)
 3. [Sistema de Autenticación JWT](#-sistema-de-autenticación-jwt)
-4. [Configuración de API](#-configuración-de-api)
+4. [Configuración de API y Endpoints](#-configuración-de-api-y-endpoints)
 5. [Estructura del Proyecto](#-estructura-del-proyecto)
-6. [Arquitectura y Funcionamiento](#-arquitectura-y-funcionamiento)
+6. [Arquitectura y Funcionamiento](#️-arquitectura-y-funcionamiento)
 7. [Base de Datos (JSON)](#-base-de-datos-json)
 8. [Gestión de Estado y Contextos](#-gestión-de-estado-y-contextos)
 9. [Añadir Nuevas Funcionalidades](#-añadir-nuevas-funcionalidades)
-10. [Buenas Prácticas](#-buenas-prácticas)
+10. [Páginas del Sistema](#-páginas-del-sistema)
+11. [Buenas Prácticas](#-buenas-prácticas)
+12. [Contexto para IA](#-contexto-para-ia-chatgpt-claude-copilot)
+13. [Solución de Problemas](#-solución-de-problemas-comunes)
+14. [Características Principales](#-características-principales-del-sistema)
 
 ---
 
@@ -34,26 +88,20 @@ cd SIVI_FRONT
 npm install
 ```
 
-### Configurar Variables de Entorno
+### Configurar Modo de Operación
 
-Copiar el archivo de ejemplo y configurar las URLs:
+El sistema **NO requiere archivo `.env`**. Todo se configura desde un único archivo:
 
-```bash
-cp .env.example .env
+Editar `src/config/appConfig.js` (línea 10):
+
+```javascript
+export const APP_MODE = 'DEVELOPMENT'; // Cambiar a 'LOCAL' o 'PRODUCTION'
 ```
 
-Editar `.env` con tus configuraciones:
-
-```env
-# URL del backend en desarrollo (local)
-VITE_API_BASE_URL_DEV=http://localhost:3000
-
-# URL del backend en producción
-VITE_API_BASE_URL_PROD=https://api.minimarket-losrobles.com
-
-# API Key de Groq (para el chat assistant)
-VITE_GROQ_API_KEY=tu_clave_aqui
-```
+**Modos disponibles:**
+- **LOCAL**: Sin backend, usa base de datos JSON local
+- **DEVELOPMENT**: Backend en desarrollo (http://localhost:8084/api)
+- **PRODUCTION**: Backend en producción
 
 ### Ejecutar el Proyecto en Desarrollo
 
@@ -91,11 +139,17 @@ npm run preview
 
 | Paquete | Versión | Descripción |
 |---------|---------|-------------|
+| Paquete | Versión | Descripción |
+|---------|---------|-------------|
 | **react** | ^19.1.1 | Librería principal para la UI |
 | **react-dom** | ^19.1.1 | Renderizado de React en el DOM |
 | **react-router-dom** | ^7.9.2 | Enrutamiento y navegación |
 | **tailwindcss** | ^4.1.13 | Framework CSS utility-first |
 | **lucide-react** | ^0.544.0 | Iconos SVG optimizados |
+| **axios** | ^1.13.2 | Cliente HTTP para peticiones |
+| **jwt-decode** | ^4.0.0 | Decodificación de tokens JWT |
+| **jspdf** | ^3.0.4 | Generación de PDFs |
+| **jspdf-autotable** | ^5.0.2 | Tablas automáticas en PDFs |
 | **vite** | ^7.1.7 | Build tool y dev server ultrarrápido |
 
 ### Verificar Versión de Node
@@ -117,17 +171,19 @@ El sistema soporta **3 modos de desarrollo**:
 
 | Modo | Descripción | Backend | Uso |
 |------|-------------|---------|-----|
+| Modo | Descripción | Backend | Uso |
+|------|-------------|---------|-----|
 | **LOCAL** | Sin backend, usa JSON local | ❌ No | Desarrollo frontend puro |
-| **DEVELOPMENT** | Backend local | ✅ http://localhost:8083 | Desarrollo full-stack |
+| **DEVELOPMENT** | Backend local | ✅ http://localhost:8084 | Desarrollo full-stack |
 | **PRODUCTION** | Backend desplegado | ✅ Servidor producción | Aplicación en vivo |
 
 ### Configuración del Modo
 
-Editar `src/services/authService.js`:
+Editar `src/config/appConfig.js`:
 
 ```javascript
-// Línea 21
-const AUTH_MODE = 'LOCAL'; // Cambiar a 'DEVELOPMENT' o 'PRODUCTION'
+// Línea 10
+export const APP_MODE = 'DEVELOPMENT'; // Cambiar a 'LOCAL' o 'PRODUCTION'
 ```
 
 ### Usuarios de Prueba (Modo LOCAL)
@@ -192,9 +248,15 @@ const MyComponent = () => {
 }
 ```
 
-### Documentación Completa
+### Chat Assistant con IA
 
-Para más detalles, ver: `src/services/README_AUTH.md`
+El sistema incluye un asistente de chat ("Roblecito") que usa IA para responder preguntas:
+
+- **Modo LOCAL**: Chat no disponible (requiere backend)
+- **Modo DEVELOPMENT/PRODUCTION**: Conecta con el endpoint `/api/chat` del backend
+- **Autenticación**: Requiere token JWT válido
+- **Componente**: `src/components/ChatAssistant.jsx`
+- **Servicio**: `src/services/ChatIA.js`
 
 ---
 
@@ -209,7 +271,33 @@ Para más detalles, ver: `src/services/README_AUTH.md`
 export const APP_MODE = 'DEVELOPMENT'; // Cambiar a 'LOCAL' o 'PRODUCTION'
 ```
 
-Ver: `CAMBIAR_MODO.md` para más detalles.
+Ver: `src/config/README.md` para más detalles.
+
+---
+
+### 🚀 Endpoints Disponibles
+
+El sistema incluye servicios completos para todas las operaciones:
+
+| Módulo | Servicio | Endpoints |
+|--------|----------|-----------|
+| **Autenticación** | `authService.js` | `/api/auth/login`, `/api/auth/refresh` |
+| **Productos** | `productosService.js` | `/api/productos/*` |
+| **Ventas** | `ventasService.js` | `/api/ventas/*` |
+| **Compras** | `comprasService.js` | `/api/compras/*` |
+| **Inventario** | `inventarioService.js` | `/api/inventario/*` |
+| **Clientes** | `clientesService.js` | `/api/clientes/*` |
+| **Proveedores** | `proveedoresService.js` | `/api/proveedores/*` |
+| **Categorías** | `categoriasService.js` | `/api/categorias/*` |
+| **Descuentos** | `descuentosService.js` | `/api/descuentos/*` |
+| **Ofertas** | `ofertasService.js` | `/api/ofertas/*` |
+| **Usuarios** | `usuariosService.js` | `/api/usuarios/*` |
+| **Reportes** | `reportesService.js` | `/api/reportes/*` |
+| **Caja Chica** | `cajaChicaService.js` | `/api/caja-chica/*` |
+| **Movimientos** | `movimientosService.js` | `/api/movimientos/*` |
+| **Chat IA** | `ChatIA.js` | `/api/chat` |
+
+Todos los endpoints están centralizados en `src/config/endpoints/`
 
 ---
 
@@ -326,16 +414,18 @@ const MiComponente = () => {
 
 ✅ **Token automático**: `httpClient` agrega el token JWT automáticamente en cada petición  
 ✅ **Manejo de errores**: Errores capturados y formateados automáticamente  
-✅ **Timeouts**: Ajustados según el modo (LOCAL/DEV/PROD)  
-✅ **Sin configuración extra**: Solo cambias `APP_MODE` en un lugar  
+✅ **Timeouts ajustables**: Según el modo (LOCAL/DEV/PROD)  
+✅ **Configuración simple**: Solo cambias `APP_MODE` en un lugar  
+✅ **Arquitectura modular**: Servicios y endpoints separados por funcionalidad  
+✅ **15+ servicios completos**: Listos para usar en cualquier componente  
 
 ---
 
-### 📚 Documentación Completa
+### 📚 Documentación Relacionada
 
 - **Configuración completa**: `src/config/README.md`
-- **Cambiar modos**: `CAMBIAR_MODO.md`
-- **Arquitectura**: `ARQUITECTURA_CONFIGURACION.txt`
+- **Arquitectura del sistema**: Ver sección "Arquitectura y Funcionamiento"
+- **Manuales**: `src/data/manual_sistema.txt` y `manual_usuario.txt`
 
 ---
 
@@ -352,60 +442,111 @@ SIVI/
 │   │   └── roblecito.png
 │   │
 │   ├── config/               # ⭐ Configuración de API y constantes
-│   │   ├── api.js           # URLs base y endpoints de la API
-│   │   └── README.md        # Documentación del módulo de configuración
+│   │   ├── appConfig.js      # Configuración principal del modo (LOCAL/DEV/PROD)
+│   │   ├── apiConfig.js      # Re-exporta configuración de appConfig
+│   │   ├── api.js            # Exportación centralizada de endpoints
+│   │   ├── README.md         # Documentación del módulo de configuración
+│   │   └── endpoints/        # Definición de endpoints por módulo
+│   │       ├── authEndpoints.js
+│   │       ├── productosEndpoints.js
+│   │       ├── ventasEndpoints.js
+│   │       ├── comprasEndpoints.js
+│   │       ├── inventarioEndpoints.js
+│   │       ├── clientesEndpoints.js
+│   │       ├── proveedoresEndpoints.js
+│   │       ├── categoriasEndpoints.js
+│   │       ├── descuentosEndpoints.js
+│   │       ├── ofertasEndpoints.js
+│   │       ├── reportesEndpoints.js
+│   │       ├── usuariosEndpoints.js
+│   │       ├── cajaChicaEndpoints.js
+│   │       └── movimientosEndpoints.js
 │   │
 │   ├── components/           # Componentes reutilizables
-│   │   ├── modales/         # Modales del sistema
+│   │   ├── modales/          # Modales del sistema
+│   │   │   ├── index.js
 │   │   │   ├── ModalAgregarProveedor.jsx
+│   │   │   ├── ModalCategorias.jsx
 │   │   │   ├── ModalCliente.jsx
+│   │   │   ├── ModalCrearUsuario.jsx
 │   │   │   ├── ModalDescuento.jsx
+│   │   │   ├── ModalEditarUsuario.jsx
+│   │   │   ├── ModalEstablecerContrasenia.jsx
 │   │   │   ├── ModalInventario.jsx
+│   │   │   ├── ModalNuevaCompra.jsx
+│   │   │   ├── ModalOlvideContrasenia.jsx
 │   │   │   ├── ModalProveedor.jsx
+│   │   │   ├── ModalReporteFinanciero.jsx
+│   │   │   ├── ModalReporteInventario.jsx
+│   │   │   ├── ModalReporteVentas.jsx
 │   │   │   ├── ModalSelectorProductos.jsx
 │   │   │   └── ModalVenta.jsx
 │   │   ├── BusquedaProductos.jsx
-│   │   ├── ChatAssistant.jsx
+│   │   ├── ChatAssistant.jsx    # Asistente de chat con IA
 │   │   ├── ComprobantePago.jsx
+│   │   ├── EjemploUsoAPI.jsx
 │   │   ├── FiltrosFecha.jsx
-│   │   ├── Layout.jsx          # Layout principal con sidebar
+│   │   ├── Layout.jsx           # Layout principal con sidebar
 │   │   ├── Login.jsx
 │   │   ├── PaginacionTabla.jsx
 │   │   ├── PaginacionVentas.jsx
-│   │   ├── ProtectedRoute.jsx  # Protección de rutas
+│   │   ├── ProtectedRoute.jsx   # Protección de rutas
 │   │   ├── PublicRoute.jsx
-│   │   ├── Sidebar.jsx         # Menú lateral de navegación
-│   │   └── TablaProductos.jsx
+│   │   ├── Sidebar.jsx          # Menú lateral de navegación
+│   │   ├── TablaProductos.jsx
+│   │   └── Toast.jsx
 │   │
 │   ├── contexts/             # Context API de React
 │   │   └── AuthContext.jsx   # Gestión de autenticación y permisos
 │   │
-│   ├── data/                 # Base de datos simulada
-│   │   └── database.json     # Datos en JSON (usuarios, productos, ventas, etc.)
+│   ├── data/                 # Base de datos simulada y manuales
+│   │   ├── database.json     # Datos en JSON (usuarios, productos, ventas, etc.)
+│   │   ├── manual_sistema.txt   # Manual técnico del sistema
+│   │   └── manual_usuario.txt   # Manual de usuario
 │   │
 │   ├── hooks/                # Custom Hooks
-│   │   └── useDatabase.js    # Hook para operaciones CRUD con database.json
+│   │   ├── useDatabase.js    # Hook para operaciones CRUD con database.json
+│   │   └── ventas/           # Hooks específicos de ventas
 │   │
 │   ├── services/             # ⭐ Servicios y lógica de negocio
-│   │   ├── httpClient.js    # Cliente HTTP con manejo de errores
-│   │   ├── productosService.js # Ejemplo de servicio para productos
-│   │   ├── ChatIA.js        # Servicio de chat con IA
-│   │   └── index.js         # Exportación centralizada de servicios
+│   │   ├── index.js          # Exportación centralizada de servicios
+│   │   ├── httpClient.js     # Cliente HTTP con manejo de errores y tokens
+│   │   ├── authService.js    # Servicio de autenticación
+│   │   ├── productosService.js
+│   │   ├── ventasService.js
+│   │   ├── comprasService.js
+│   │   ├── inventarioService.js
+│   │   ├── clientesService.js
+│   │   ├── proveedoresService.js
+│   │   ├── categoriasService.js
+│   │   ├── descuentosService.js
+│   │   ├── ofertasService.js
+│   │   ├── tipoOfertaService.js
+│   │   ├── usuariosService.js
+│   │   ├── reportesService.js
+│   │   ├── cajaChicaService.js
+│   │   ├── movimientosService.js
+│   │   └── ChatIA.js          # Servicio de chat con IA
 │   │
 │   ├── pages/                # Páginas principales del sistema
-│   │   ├── AgregarStock.jsx
-│   │   ├── CajaChica.jsx
+│   │   ├── index.js          # Exportación centralizada de páginas
+│   │   ├── Ventas.jsx
 │   │   ├── Compras.jsx
+│   │   ├── Productos.jsx
 │   │   ├── Descuentos.jsx
 │   │   ├── Inventario.jsx
-│   │   ├── Productos.jsx
+│   │   ├── AgregarStock.jsx
 │   │   ├── Reportes.jsx
 │   │   ├── Usuarios.jsx
-│   │   ├── Ventas.jsx
-│   │   └── index.js          # Exportación centralizada de páginas
+│   │   ├── CajaChica.jsx
+│   │   └── Movimiento.jsx
 │   │
 │   ├── styles/               # Estilos y configuraciones de diseño
 │   │   └── colors.js         # Paleta de colores del sistema
+│   │
+│   ├── utils/                # Utilidades y helpers
+│   │   ├── generarTicketPDF.js
+│   │   └── ventasCalculos.js
 │   │
 │   ├── App.jsx               # Componente raíz con rutas
 │   ├── main.jsx              # Punto de entrada de la aplicación
@@ -415,21 +556,30 @@ SIVI/
 ├── postcss.config.js         # Configuración de PostCSS
 ├── tailwind.config.js        # Configuración de Tailwind CSS
 ├── vite.config.js            # Configuración de Vite
-├── .env                      # ⭐ Variables de entorno (NO subir a Git)
-├── .env.example              # ⭐ Plantilla de variables de entorno
+├── .env.example              # ⭐ Plantilla de variables de entorno (opcional)
 ├── package.json              # Dependencias y scripts
 └── README.md                 # Este archivo
 ```
 
-### ⭐ Archivos Nuevos (Configuración API)
+### ⭐ Módulos Principales
 
-Los archivos marcados con ⭐ son parte del nuevo módulo de configuración de API:
+**Configuración (`src/config/`)**
+- Centraliza URLs y endpoints de la API
+- Sistema modular con archivos separados por funcionalidad
+- Un solo lugar para cambiar entre LOCAL/DEVELOPMENT/PRODUCTION
 
-- **`src/config/api.js`**: Centraliza todas las URLs y endpoints
-- **`src/services/httpClient.js`**: Cliente HTTP reutilizable con timeout y manejo de errores
-- **`src/services/productosService.js`**: Ejemplo de servicio completo
-- **`.env`**: Variables de entorno (desarrollo y producción)
-- **`.env.example`**: Plantilla para configurar tu propio `.env`
+**Servicios (`src/services/`)**
+- Capa de abstracción para comunicación con el backend
+- `httpClient.js` maneja automáticamente tokens JWT y errores
+- Servicios completos para todos los módulos del sistema
+
+**Páginas (`src/pages/`)**
+- 10 módulos principales: Ventas, Compras, Productos, Descuentos, Inventario, AgregarStock, Reportes, Usuarios, CajaChica, Movimiento
+
+**Componentes (`src/components/`)**
+- 15+ modales reutilizables para diferentes operaciones
+- Componentes de UI comunes (tablas, paginación, búsqueda, filtros)
+- Layout y navegación (Sidebar, ProtectedRoute, PublicRoute)
 
 ---
 
@@ -790,7 +940,7 @@ return {
 };
 ```
 
-### Paso 6: Actualizar database.json
+### Paso 4: Actualizar database.json
 
 Agregar tabla inicial en `src/data/database.json`:
 
@@ -801,6 +951,46 @@ Agregar tabla inicial en `src/data/database.json`:
   "misDatos": []
 }
 ```
+
+---
+
+## 📱 Páginas del Sistema
+
+### Páginas Disponibles
+
+| Ruta | Componente | Descripción | Permisos |
+|------|------------|-------------|----------|
+| `/app/ventas` | `Ventas.jsx` | Punto de venta (POS) y historial | ventas |
+| `/app/caja-chica` | `CajaChica.jsx` | Gestión de caja chica | admin |
+| `/app/compras` | `Compras.jsx` | Registro de compras | compras |
+| `/app/productos` | `Productos.jsx` | Gestión de productos | inventario |
+| `/app/productos/descuentos` | `Descuentos.jsx` | Gestión de descuentos | inventario |
+| `/app/inventario` | `Inventario.jsx` | Control de inventario | inventario |
+| `/app/inventario/agregar-stock` | `AgregarStock.jsx` | Agregar stock a productos | inventario |
+| `/app/movimiento` | `Movimiento.jsx` | Movimientos de caja | admin |
+| `/app/reportes` | `Reportes.jsx` | Reportes del sistema | reportes |
+| `/app/usuarios` | `Usuarios.jsx` | Gestión de usuarios | admin |
+
+### Componentes Modales (15+)
+
+Los modales son componentes reutilizables para operaciones CRUD:
+
+- `ModalVenta` - Registrar nueva venta
+- `ModalNuevaCompra` - Registrar compra
+- `ModalSelectorProductos` - Selector de productos para ventas
+- `ModalCliente` - Gestión de clientes
+- `ModalProveedor` - Gestión de proveedores
+- `ModalAgregarProveedor` - Crear nuevo proveedor
+- `ModalCategorias` - Gestión de categorías
+- `ModalDescuento` - Crear/editar descuentos
+- `ModalInventario` - Ajustes de inventario
+- `ModalCrearUsuario` - Crear nuevo usuario
+- `ModalEditarUsuario` - Editar usuario existente
+- `ModalEstablecerContrasenia` - Cambiar contraseña
+- `ModalOlvideContrasenia` - Recuperar contraseña
+- `ModalReporteVentas` - Configurar reporte de ventas
+- `ModalReporteFinanciero` - Configurar reporte financiero
+- `ModalReporteInventario` - Configurar reporte de inventario
 
 ---
 
@@ -876,33 +1066,59 @@ Si trabajas con una IA para desarrollar nuevas features, **comparte este README 
 ### Información del Sistema
 
 ```
-Este es un sistema de gestión para minimarket desarrollado con:
-- React 19 + Vite 7
-- Tailwind CSS 4
-- React Router DOM 7
-- Base de datos en JSON simulada con localStorage
+Este es SIVI - Sistema de Inventario y Ventas Integrado para minimarket.
+
+Stack Tecnológico:
+- React 19.1.1 + Vite 7.1.7
+- Tailwind CSS 4.1.13
+- React Router DOM 7.9.2
+- Axios 1.13.2 para peticiones HTTP
+- JWT para autenticación
+- jsPDF para generación de reportes
 
 Arquitectura:
-- Context API para autenticación (AuthContext)
-- Custom Hook useDatabase para operaciones CRUD
+- Context API (AuthContext) para autenticación global
+- Custom Hook (useDatabase) para operaciones CRUD en modo LOCAL
+- Servicios modulares (15+ servicios) para comunicación con backend
+- httpClient centralizado con manejo automático de tokens JWT
 - Componentes funcionales con hooks
-- Rutas protegidas por permisos
+- Rutas protegidas por permisos basados en roles
 
-La aplicación NO tiene backend, todo es frontend con persistencia en localStorage.
+Modos de Operación:
+1. LOCAL: Sin backend, datos en localStorage (database.json)
+2. DEVELOPMENT: Backend en http://localhost:8084/api
+3. PRODUCTION: Backend en servidor de producción
+
+Módulos del Sistema:
+- Ventas (POS)
+- Compras
+- Inventario
+- Productos y Descuentos
+- Reportes (Ventas, Financieros, Inventario)
+- Usuarios y Permisos
+- Caja Chica
+- Movimientos de Caja
+- Chat Assistant con IA (Roblecito)
+
+Todos los servicios están en src/services/ y endpoints en src/config/endpoints/
 ```
 
 ### Ejemplo de Prompt Efectivo
 
 ```
-Necesito agregar una funcionalidad de "Gestión de Clientes" en SIVI.
+Necesito agregar una funcionalidad de "Gestión de Proveedores" con historial de compras en SIVI.
 
 Requisitos:
-1. Crear página Clientes.jsx que muestre tabla de clientes
-2. Modal para crear/editar clientes (nombre, DNI, teléfono, email)
-3. Botones para editar y eliminar
-4. Búsqueda por nombre o DNI
-5. Seguir la misma estructura y estilos que Usuarios.jsx
+1. Crear endpoint en src/config/endpoints/proveedoresEndpoints.js
+2. Crear servicio en src/services/proveedoresService.js con operaciones CRUD
+3. Página Proveedores.jsx que muestre:
+   - Tabla de proveedores con búsqueda
+   - Modal para crear/editar (RUC, razón social, contacto, teléfono, email)
+   - Historial de compras por proveedor
+4. Botones para editar, eliminar y ver historial
+5. Seguir la misma estructura y estilos que Productos.jsx
 
+Tecnologías: React 19, Tailwind CSS 4, Axios, React Router DOM 7
 Contexto del proyecto: [Pegar este README completo]
 ```
 
@@ -912,8 +1128,16 @@ Contexto del proyecto: [Pegar este README completo]
 
 ### El proyecto no inicia
 
+```powershell
+# En PowerShell - Eliminar node_modules y reinstalar
+Remove-Item -Recurse -Force node_modules, package-lock.json
+npm install
+npm run dev
+```
+
+O en bash/terminal Unix:
+
 ```bash
-# Eliminar node_modules y reinstalar
 rm -rf node_modules package-lock.json
 npm install
 npm run dev
@@ -954,8 +1178,55 @@ Para dudas, bugs o sugerencias:
 
 ## 📄 Licencia
 
-Este proyecto es de uso privado para el Minimarket Los Robles.
+Este proyecto es de uso académico para el Curso Integrador I - UTP.
 
 ---
 
-**Última actualización**: Octubre 2025
+**Última actualización**: Diciembre 2024 - v1.0
+
+---
+
+## 🎯 Características Principales del Sistema
+
+### Módulo de Ventas (POS)
+- Registro rápido de ventas con selector de productos
+- Búsqueda de productos por código o nombre
+- Cálculo automático de totales, descuentos e IGV
+- Generación de comprobantes en PDF
+- Historial de ventas con paginación y filtros por fecha
+
+### Módulo de Inventario
+- Control de stock en tiempo real
+- Alertas de stock mínimo
+- Registro de entradas y salidas
+- Gestión de productos (CRUD completo)
+- Categorización de productos
+
+### Módulo de Compras
+- Registro de compras a proveedores
+- Actualización automática de inventario
+- Generación de órdenes de compra
+- Historial de compras con filtros
+
+### Módulo de Reportes
+- Reportes de ventas por período
+- Reportes financieros
+- Reportes de inventario
+- Exportación a PDF con jsPDF
+- Tablas automáticas con jspdf-autotable
+
+### Sistema de Usuarios y Permisos
+- Roles: Admin, Cajero, Inventario
+- Permisos granulares por módulo
+- Autenticación JWT
+- Gestión de usuarios (crear, editar, desactivar)
+
+### Caja Chica
+- Registro de ingresos y egresos
+- Control de gastos operativos
+- Historial de movimientos
+
+### Chat Assistant (Roblecito)
+- Asistente virtual con IA
+- Respuestas sobre el sistema
+- Requiere backend con integración de IA
